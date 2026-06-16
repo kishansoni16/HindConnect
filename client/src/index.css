@@ -1,0 +1,66 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased selection:bg-corporate-orange/20 selection:text-corporate-orange;
+  }
+}
+
+/* Custom scrollbars for corporate clean feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F8F9FA;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Glassmorphism panel */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+/* HindConnect Premium Gradients */
+.bg-gradient-corporate {
+  background: linear-gradient(135deg, #0F2942 0%, #1E3E62 100%);
+}
+
+.bg-gradient-accent {
+  background: linear-gradient(135deg, #F26822 0%, #FF7E47 100%);
+}
+
+.bg-gradient-light {
+  background: linear-gradient(135deg, #F8F9FA 0%, #E6ECF4 100%);
+}
+
+/* Custom animated border */
+.animated-border {
+  position: relative;
+}
+.animated-border::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #F26822;
+  transition: width 0.3s ease;
+}
+.animated-border:hover::after {
+  width: 100%;
+}

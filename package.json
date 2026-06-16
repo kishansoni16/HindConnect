@@ -1,0 +1,13 @@
+{
+  "name": "hindconnect-monorepo",
+  "version": "1.0.0",
+  "description": "HindConnect Enterprise Portal Monorepo",
+  "scripts": {
+    "install-server": "npm install --prefix server",
+    "install-client": "npm install --prefix client",
+    "install-all": "npm run install-server && npm run install-client",
+    "start-server": "npm start --prefix server",
+    "start-client": "npm run dev --prefix client",
+    "seed": "npm run seed --prefix server"
+  }
+}
