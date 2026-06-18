@@ -42,6 +42,7 @@ app.put('/api/kb/:id/helpful', kbController.voteHelpful);
 
 // 4. AI helper routes
 app.post('/api/ai/analyze', aiController.analyzeTicket);
+app.post('/api/ai/chat', aiController.chatAssistant);
 
 // 5. Analytics routes (Admin-only)
 app.get('/api/analytics', authMiddleware, authorize(['Admin']), analyticsController.getDashboardStats);

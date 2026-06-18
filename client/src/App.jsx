@@ -5,6 +5,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
+import ChatbotWidget from './components/ChatbotWidget';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 
@@ -116,6 +117,9 @@ function AppContent() {
       {showNavbarAndFooter && (
         <Footer onNavigate={handleNavigate} />
       )}
+
+      {/* Floating Chatbot Widget */}
+      <ChatbotWidget />
     </div>
   );
 }

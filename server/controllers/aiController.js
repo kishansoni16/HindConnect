@@ -150,6 +150,88 @@ const analyzeTicket = async (req, res) => {
   }
 };
 
+const chatAssistant = async (req, res) => {
+  try {
+    const { message, history } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ message: 'Message text is required' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.json({
+        text: "I'm sorry, the HindConnect AI assistant is currently running in offline fallback mode. Please configure the GEMINI_API_KEY. To help you: VPN portal is vpn.hindalco.com, printer queue is \\\\prnt-srv-corp\\HindPrint-Secure, and AD password reset is at identity.hindalco.com."
+      });
+    }
+
+    const contents = [];
+    if (history && Array.isArray(history)) {
+      history.forEach(h => {
+        contents.push({
+          role: h.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: h.text }]
+        });
+      });
+    }
+
+    contents.push({
+      role: 'user',
+      parts: [{ text: message }]
+    });
+
+    const systemInstructionText = `
+You are the HindConnect IT Assistant, an advanced virtual agent dedicated to helping employees of Hindalco plants (refineries like Refinery, smelters like Smelter, logistics, finance, IT departments) with technical support and IT queries.
+
+Follow these corporate rules and technical specifications strictly:
+1. VPN Access: Use GlobalProtect VPN client portal address "vpn.hindalco.com". It requires an active HindConnect Active Directory (AD) login and Multi-Factor Authentication (MFA) approved on a registered mobile device.
+2. Network Printers: Printers are HP/Ricoh. Map your badge on first swipe by tapping "Yes" and entering AD credentials. Windows print queue path is "\\\\prnt-srv-corp\\HindPrint-Secure".
+3. Active Directory Password Reset: AD Self-Service Password Reset (SSPR) portal is "https://identity.hindalco.com". Passwords expire every 90 days. Minimum length is 12 characters with uppercase, numbers, and symbols.
+4. SAP S/4HANA ERP Access: Access is requested via GRC Portal "https://grc.hindalco.com" using AD credentials. Transaction codes like ME21N (Purchase Orders) or FB01 (Accounting) must have business justification and manager approval.
+5. SLA Guidelines: Critical incidents (4 hours resolution), High (24 hours), Medium (48 hours), Low (72 hours).
+6. Incidents: If user wants to check/track/submit tickets, tell them to log in to HindConnect portal and access the ticket dashboard.
+
+Tone: Professional, direct, helpful, and concise. Format your responses with clean Markdown (bullet points, bold text). Keep responses to 2-3 paragraphs max so they fit comfortably in a chat window.
+`;
+
+    const requestBody = {
+      contents,
+      systemInstruction: {
+        parts: [{ text: systemInstructionText }]
+      }
+    };
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API request failed:', errorText);
+      throw new Error(`Gemini API returned status ${response.status}`);
+    }
+
+    const data = await response.json();
+    let textReply = "I'm sorry, I couldn't process your request at this moment.";
+    
+    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
+      textReply = data.candidates[0].content.parts[0].text;
+    }
+
+    res.json({ text: textReply });
+  } catch (error) {
+    console.error('Chat Assistant Error:', error);
+    res.status(500).json({ message: 'Server error during AI assistant chat' });
+  }
+};
+
 module.exports = {
-  analyzeTicket
+  analyzeTicket,
+  chatAssistant
 };

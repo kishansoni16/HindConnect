@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const getHeaders = () => {
   const headers = {
@@ -143,5 +143,12 @@ export const api = {
   approveUser: (id) => fetch(`${API_BASE_URL}/users/${id}/approve`, {
     method: 'PUT',
     headers: getHeaders(),
+  }).then(handleResponse),
+
+  chat: (message, history = []) => fetch(`${API_BASE_URL}/ai/chat`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ message, history }),
   }).then(handleResponse)
 };
+

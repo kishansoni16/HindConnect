@@ -1,3 +1,6 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
 const bcrypt = require('bcryptjs');
 const { connectDB, User, Ticket, Comment, KnowledgeBase, Notification, ActivityLog } = require('./db');
 
