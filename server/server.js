@@ -24,6 +24,8 @@ app.use(express.json());
 // 1. Auth routes
 app.post('/api/auth/register', authController.register);
 app.post('/api/auth/login', authController.login);
+app.post('/api/auth/send-otp', authController.sendOtp);
+app.post('/api/auth/verify-otp', authController.verifyOtp);
 app.get('/api/auth/me', authMiddleware, authController.getMe);
 app.put('/api/users/profile', authMiddleware, authController.updateProfile);
 app.get('/api/users', authMiddleware, authorize(['Admin']), authController.getAllUsers);

@@ -1,10 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const { createClient } = require('@supabase/supabase-js');
 const { v4: uuidv4 } = require('uuid');
 
 const JSON_DB_PATH = path.join(__dirname, 'database.json');
 let useMongo = false;
+let useSupabase = false;
+let supabase = null;
 
 // Simple Mongoose schema definitions
 const userSchema = new mongoose.Schema({
@@ -163,7 +166,6 @@ class JsonModel {
     const index = items.findIndex(item => item.id === id || item._id === id);
     if (index === -1) return null;
     
-    // Support Mongoose-like $push operators if needed, or simple merge
     const current = items[index];
     let updated = { ...current, ...updateData, updatedAt: new Date().toISOString() };
     
@@ -208,14 +210,237 @@ class JsonModel {
   }
 }
 
+const TABLE_COLUMNS = {
+  users: [
+    'id', '_id', 'name', 'email', 'password', 'role', 'department', 
+    'isApproved', 'mobile', 'bloodGroup', 'doj', 'empCode', 
+    'designation', 'emergencyContact', 'createdAt'
+  ],
+  tickets: [
+    'id', '_id', 'title', 'description', 'category', 'priority', 
+    'status', 'department', 'employeeId', 'assignedTo', 'slaDeadline', 
+    'attachments', 'createdAt', 'updatedAt'
+  ],
+  comments: [
+    'id', '_id', 'ticketId', 'userId', 'userName', 'userRole', 
+    'message', 'isInternal', 'createdAt'
+  ],
+  knowledge_base: [
+    'id', '_id', 'title', 'category', 'content', 'views', 
+    'helpfulVotes', 'createdAt'
+  ],
+  notifications: [
+    'id', '_id', 'userId', 'message', 'isRead', 'createdAt'
+  ],
+  activity_logs: [
+    'id', '_id', 'ticketId', 'action', 'userId', 'userName', 
+    'details', 'createdAt'
+  ]
+};
+
+// Supabase database collection wrapper to mimic Mongoose
+class SupabaseModel {
+  constructor(tableName) {
+    this.tableName = tableName;
+  }
+
+  async find(query = {}) {
+    let q = supabase.from(this.tableName).select('*');
+    for (let key in query) {
+      if (key === '_id' || key === 'id') {
+        q = q.or(`id.eq.${query[key]},_id.eq.${query[key]}`);
+      } else if (query[key] !== undefined && query[key] !== null) {
+        q = q.eq(key, query[key]);
+      }
+    }
+    const { data, error } = await q;
+    if (error) {
+      console.error(`Supabase find error on ${this.tableName}:`, error);
+      throw error;
+    }
+    return (data || []).map(item => ({ ...item, _id: item.id || item._id, id: item.id || item._id }));
+  }
+
+  async findOne(query = {}) {
+    let q = supabase.from(this.tableName).select('*');
+    for (let key in query) {
+      if (key === '_id' || key === 'id') {
+        q = q.or(`id.eq.${query[key]},_id.eq.${query[key]}`);
+      } else if (query[key] !== undefined && query[key] !== null) {
+        q = q.eq(key, query[key]);
+      }
+    }
+    const { data, error } = await q.limit(1);
+    if (error) {
+      console.error(`Supabase findOne error on ${this.tableName}:`, error);
+      throw error;
+    }
+    if (!data || data.length === 0) return null;
+    return { ...data[0], _id: data[0].id, id: data[0].id };
+  }
+
+  async findById(id) {
+    return this.findOne({ id });
+  }
+
+  async create(data) {
+    const columns = TABLE_COLUMNS[this.tableName] || [];
+    const insertData = {};
+    for (let key of columns) {
+      if (data[key] !== undefined) {
+        insertData[key] = data[key];
+      }
+    }
+    if (!insertData.id) {
+      const id = data.id || data._id || uuidv4();
+      insertData.id = id;
+      insertData._id = id;
+    }
+    if (columns.includes('createdAt') && !insertData.createdAt) {
+      insertData.createdAt = new Date().toISOString();
+    }
+    if (columns.includes('updatedAt') && !insertData.updatedAt) {
+      insertData.updatedAt = new Date().toISOString();
+    }
+
+    const { data: inserted, error } = await supabase
+      .from(this.tableName)
+      .insert(insertData)
+      .select();
+
+    if (error) {
+      console.error(`Supabase create error on ${this.tableName}:`, error);
+      throw error;
+    }
+    return { ...inserted[0], _id: inserted[0].id, id: inserted[0].id };
+  }
+
+  async findByIdAndUpdate(id, updateData, options = {}) {
+    const columns = TABLE_COLUMNS[this.tableName] || [];
+    const cleanUpdate = {};
+    for (let key of columns) {
+      if (updateData[key] !== undefined && key !== 'id' && key !== '_id') {
+        cleanUpdate[key] = updateData[key];
+      }
+    }
+    if (columns.includes('updatedAt') && !cleanUpdate.updatedAt) {
+      cleanUpdate.updatedAt = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+      .from(this.tableName)
+      .update(cleanUpdate)
+      .or(`id.eq.${id},_id.eq.${id}`)
+      .select();
+
+    if (error) {
+      console.error(`Supabase findByIdAndUpdate error on ${this.tableName}:`, error);
+      throw error;
+    }
+    if (!data || data.length === 0) return null;
+    return { ...data[0], _id: data[0].id, id: data[0].id };
+  }
+
+  async updateOne(query, updateData) {
+    const columns = TABLE_COLUMNS[this.tableName] || [];
+    const cleanUpdate = {};
+    for (let key of columns) {
+      if (updateData[key] !== undefined && key !== 'id' && key !== '_id') {
+        cleanUpdate[key] = updateData[key];
+      }
+    }
+    if (columns.includes('updatedAt') && !cleanUpdate.updatedAt) {
+      cleanUpdate.updatedAt = new Date().toISOString();
+    }
+
+    let q = supabase.from(this.tableName).update(cleanUpdate);
+    for (let key in query) {
+      if (key === '_id' || key === 'id') {
+        q = q.or(`id.eq.${query[key]},_id.eq.${query[key]}`);
+      } else if (query[key] !== undefined && query[key] !== null) {
+        q = q.eq(key, query[key]);
+      }
+    }
+    const { data, error } = await q.select();
+    if (error) {
+      console.error(`Supabase updateOne error on ${this.tableName}:`, error);
+      throw error;
+    }
+    return { nModified: data ? data.length : 0 };
+  }
+
+  async deleteMany(query = {}) {
+    let q = supabase.from(this.tableName).delete();
+    let hasFilter = false;
+    for (let key in query) {
+      if (key === '_id' || key === 'id') {
+        q = q.or(`id.eq.${query[key]},_id.eq.${query[key]}`);
+        hasFilter = true;
+      } else if (query[key] !== undefined && query[key] !== null) {
+        q = q.eq(key, query[key]);
+        hasFilter = true;
+      }
+    }
+    if (!hasFilter) {
+      q = q.neq('id', 'all');
+    }
+    const { data, error } = await q.select();
+    if (error) {
+      console.error(`Supabase deleteMany error on ${this.tableName}:`, error);
+      throw error;
+    }
+    return { deletedCount: data ? data.length : 0 };
+  }
+
+  async countDocuments(query = {}) {
+    let q = supabase.from(this.tableName).select('*', { count: 'exact', head: true });
+    for (let key in query) {
+      if (key === '_id' || key === 'id') {
+        q = q.or(`id.eq.${query[key]},_id.eq.${query[key]}`);
+      } else if (query[key] !== undefined && query[key] !== null) {
+        q = q.eq(key, query[key]);
+      }
+    }
+    const { count, error } = await q;
+    if (error) {
+      console.error(`Supabase countDocuments error on ${this.tableName}:`, error);
+      throw error;
+    }
+    return count || 0;
+  }
+}
+
 // Connect Function
 const connectDB = async () => {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_KEY;
+
+  if (supabaseUrl && supabaseKey) {
+    try {
+      console.log('Initializing Supabase client...');
+      supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Test the connection by doing a simple select on users
+      const { data, error } = await supabase.from('users').select('id').limit(1);
+      if (error) {
+        throw error;
+      }
+      console.log('Supabase connected successfully');
+      useSupabase = true;
+      useMongo = false;
+      return;
+    } catch (error) {
+      console.warn('Supabase connection failed. Falling back to local JSON database.', error.message);
+    }
+  }
+
   const mongoUri = process.env.MONGO_URI;
   if (mongoUri) {
     try {
       await mongoose.connect(mongoUri);
       console.log('MongoDB connected successfully');
       useMongo = true;
+      useSupabase = false;
 
       MongoUser = mongoose.model('User', userSchema);
       MongoTicket = mongoose.model('Ticket', ticketSchema);
@@ -228,42 +453,68 @@ const connectDB = async () => {
       console.warn('MongoDB connection failed. Falling back to local JSON database.', error.message);
     }
   } else {
-    console.log('No MONGO_URI specified. Using local JSON database fallback.');
+    console.log('No database credentials (Supabase/Mongo) specified. Using local JSON database fallback.');
   }
   
   useMongo = false;
+  useSupabase = false;
   initJsonDb();
 };
 
 // Expose unified models
-const getModel = (name, mongoModelFactory, jsonCollectionName) => {
+const getModel = (name, mongoModelFactory, jsonCollectionName, supabaseTableName) => {
   return {
-    find: (query) => useMongo ? mongoModelFactory().find(query).lean() : new JsonModel(jsonCollectionName).find(query),
-    findOne: (query) => useMongo ? mongoModelFactory().findOne(query).lean() : new JsonModel(jsonCollectionName).findOne(query),
-    findById: (id) => useMongo ? mongoModelFactory().findById(id).lean() : new JsonModel(jsonCollectionName).findById(id),
-    create: (data) => useMongo ? mongoModelFactory().create(data) : new JsonModel(jsonCollectionName).create(data),
-    findByIdAndUpdate: (id, update, options) => useMongo 
-      ? mongoModelFactory().findByIdAndUpdate(id, update, { new: true, ...options }).lean() 
-      : new JsonModel(jsonCollectionName).findByIdAndUpdate(id, update, options),
-    updateOne: (query, update) => useMongo 
-      ? mongoModelFactory().updateOne(query, update) 
-      : new JsonModel(jsonCollectionName).updateOne(query, update),
-    deleteMany: (query) => useMongo 
-      ? mongoModelFactory().deleteMany(query) 
-      : new JsonModel(jsonCollectionName).deleteMany(query),
-    countDocuments: (query) => useMongo 
-      ? mongoModelFactory().countDocuments(query) 
-      : new JsonModel(jsonCollectionName).countDocuments(query),
-    isMongo: () => useMongo
+    find: (query) => {
+      if (useSupabase) return new SupabaseModel(supabaseTableName).find(query);
+      if (useMongo) return mongoModelFactory().find(query).lean();
+      return new JsonModel(jsonCollectionName).find(query);
+    },
+    findOne: (query) => {
+      if (useSupabase) return new SupabaseModel(supabaseTableName).findOne(query);
+      if (useMongo) return mongoModelFactory().findOne(query).lean();
+      return new JsonModel(jsonCollectionName).findOne(query);
+    },
+    findById: (id) => {
+      if (useSupabase) return new SupabaseModel(supabaseTableName).findById(id);
+      if (useMongo) return mongoModelFactory().findById(id).lean();
+      return new JsonModel(jsonCollectionName).findById(id);
+    },
+    create: (data) => {
+      if (useSupabase) return new SupabaseModel(supabaseTableName).create(data);
+      if (useMongo) return mongoModelFactory().create(data);
+      return new JsonModel(jsonCollectionName).create(data);
+    },
+    findByIdAndUpdate: (id, update, options) => {
+      if (useSupabase) return new SupabaseModel(supabaseTableName).findByIdAndUpdate(id, update, options);
+      if (useMongo) return mongoModelFactory().findByIdAndUpdate(id, update, { new: true, ...options }).lean();
+      return new JsonModel(jsonCollectionName).findByIdAndUpdate(id, update, options);
+    },
+    updateOne: (query, update) => {
+      if (useSupabase) return new SupabaseModel(supabaseTableName).updateOne(query, update);
+      if (useMongo) return mongoModelFactory().updateOne(query, update);
+      return new JsonModel(jsonCollectionName).updateOne(query, update);
+    },
+    deleteMany: (query) => {
+      if (useSupabase) return new SupabaseModel(supabaseTableName).deleteMany(query);
+      if (useMongo) return mongoModelFactory().deleteMany(query);
+      return new JsonModel(jsonCollectionName).deleteMany(query);
+    },
+    countDocuments: (query) => {
+      if (useSupabase) return new SupabaseModel(supabaseTableName).countDocuments(query);
+      if (useMongo) return mongoModelFactory().countDocuments(query);
+      return new JsonModel(jsonCollectionName).countDocuments(query);
+    },
+    isMongo: () => useMongo,
+    isSupabase: () => useSupabase
   };
 };
 
 module.exports = {
   connectDB,
-  User: getModel('User', () => MongoUser, 'users'),
-  Ticket: getModel('Ticket', () => MongoTicket, 'tickets'),
-  Comment: getModel('Comment', () => MongoComment, 'comments'),
-  KnowledgeBase: getModel('KnowledgeBase', () => MongoKb, 'knowledge_base'),
-  Notification: getModel('Notification', () => MongoNotification, 'notifications'),
-  ActivityLog: getModel('ActivityLog', () => MongoActivityLog, 'activity_logs')
+  User: getModel('User', () => MongoUser, 'users', 'users'),
+  Ticket: getModel('Ticket', () => MongoTicket, 'tickets', 'tickets'),
+  Comment: getModel('Comment', () => MongoComment, 'comments', 'comments'),
+  KnowledgeBase: getModel('KnowledgeBase', () => MongoKb, 'knowledge_base', 'knowledge_base'),
+  Notification: getModel('Notification', () => MongoNotification, 'notifications', 'notifications'),
+  ActivityLog: getModel('ActivityLog', () => MongoActivityLog, 'activity_logs', 'activity_logs')
 };

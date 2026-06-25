@@ -8,10 +8,16 @@ const navItems = [
 ];
 
 export default function LoginPage({ onLoginSuccess }) {
-  const { login, loading } = useAuth();
+  const { login, loginWithOtp, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // OTP Login states
+  const [isOtpMode, setIsOtpMode] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
 
   // Registration states
   const [isRegister, setIsRegister] = useState(false);
@@ -38,6 +44,42 @@ export default function LoginPage({ onLoginSuccess }) {
       onLoginSuccess();
     } catch (err) {
       setErrorMsg(err.message || 'Authentication failed. Please check credentials.');
+    }
+  };
+
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (!email) {
+      setErrorMsg('Please enter your corporate email address first.');
+      return;
+    }
+    try {
+      setOtpLoading(true);
+      const res = await api.sendOtp(email);
+      setOtpSent(true);
+      setSuccessMsg(res.message || 'Verification code sent to your email.');
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to send verification code.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (!otpCode) {
+      setErrorMsg('Please enter the 6-digit verification code.');
+      return;
+    }
+    try {
+      await loginWithOtp(email, otpCode);
+      onLoginSuccess();
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to verify OTP code.');
     }
   };
 
@@ -77,6 +119,12 @@ export default function LoginPage({ onLoginSuccess }) {
 
   // Quick select accounts for evaluator convenience
   const quickAccounts = [
+    {
+      role: 'Admin',
+      name: 'Kishan Soni',
+      email: 'kishanrkt16@gmail.com',
+      dept: 'IT Support'
+    },
     {
       role: 'Employee',
       name: 'Rajesh Sharma',
@@ -405,67 +453,167 @@ export default function LoginPage({ onLoginSuccess }) {
                 </button>
               </form>
             ) : (
-              <form className="space-y-5" onSubmit={handleSubmit}>
-                {/* Email Field */}
-                <div className="space-y-1">
-                  <label htmlFor="email" className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
-                    Corporate Email Address
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                      <Mail className="w-4 h-4" />
-                    </span>
-                    <input
-                      id="email"
-                      type="email"
-                      required
-                      placeholder="name@hindconnect.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3.5 border border-slate-200 focus:border-corporate-orange focus:ring-2 focus:ring-corporate-orange/20 rounded-xl text-xs sm:text-sm text-slate-800 transition-all shadow-sm bg-slate-50/30 hover:border-slate-300 focus:bg-white"
-                    />
-                  </div>
+              <div>
+                {/* Login Type Selector */}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <button
+                    type="button"
+                    onClick={() => { setIsOtpMode(false); setErrorMsg(''); setSuccessMsg(''); }}
+                    className={`py-3.5 px-4 text-xs font-bold text-center rounded-xl transition-all cursor-pointer border flex items-center justify-center space-x-2 ${
+                      !isOtpMode 
+                        ? 'bg-corporate-orange text-white border-corporate-orange shadow-md shadow-corporate-orange/15' 
+                        : 'bg-white text-slate-650 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>Password Login</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setIsOtpMode(true); setErrorMsg(''); setSuccessMsg(''); }}
+                    className={`py-3.5 px-4 text-xs font-bold text-center rounded-xl transition-all cursor-pointer border flex items-center justify-center space-x-2 ${
+                      isOtpMode 
+                        ? 'bg-corporate-orange text-white border-corporate-orange shadow-md shadow-corporate-orange/15' 
+                        : 'bg-white text-slate-650 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>OTP Login</span>
+                  </button>
                 </div>
 
-                {/* Password Field */}
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label htmlFor="password" className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
-                      AD Password
-                    </label>
-                    <a className="text-[10px] font-semibold text-corporate-orange hover:text-corporate-orangeHover cursor-pointer">
-                      Forgot Password?
-                    </a>
-                  </div>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                      <Lock className="w-4 h-4" />
-                    </span>
-                    <input
-                      id="password"
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3.5 border border-slate-200 focus:border-corporate-orange focus:ring-2 focus:ring-corporate-orange/20 rounded-xl text-xs sm:text-sm text-slate-800 transition-all shadow-sm bg-slate-50/30 hover:border-slate-300 focus:bg-white"
-                    />
-                  </div>
-                </div>
+                {!isOtpMode ? (
+                  <form className="space-y-5" onSubmit={handleSubmit}>
+                    {/* Email Field */}
+                    <div className="space-y-1">
+                      <label htmlFor="email" className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                        Corporate Email Address
+                      </label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                          <Mail className="w-4 h-4" />
+                        </span>
+                        <input
+                          id="email"
+                          type="email"
+                          required
+                          placeholder="name@hindconnect.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3.5 border border-slate-200 focus:border-corporate-orange focus:ring-2 focus:ring-corporate-orange/20 rounded-xl text-xs sm:text-sm text-slate-800 transition-all shadow-sm bg-slate-50/30 hover:border-slate-300 focus:bg-white"
+                        />
+                      </div>
+                    </div>
 
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 px-4 bg-corporate-orange hover:bg-corporate-orangeHover text-white font-bold text-xs sm:text-sm rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-corporate-orange/20 flex justify-center items-center space-x-2"
-                >
-                  {loading ? (
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  ) : (
-                    <span>Verify Credentials</span>
-                  )}
-                </button>
-              </form>
+                    {/* Password Field */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label htmlFor="password" className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                          AD Password
+                        </label>
+                        <a className="text-[10px] font-semibold text-corporate-orange hover:text-corporate-orangeHover cursor-pointer">
+                          Forgot Password?
+                        </a>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                          <Lock className="w-4 h-4" />
+                        </span>
+                        <input
+                          id="password"
+                          type="password"
+                          required
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3.5 border border-slate-200 focus:border-corporate-orange focus:ring-2 focus:ring-corporate-orange/20 rounded-xl text-xs sm:text-sm text-slate-800 transition-all shadow-sm bg-slate-50/30 hover:border-slate-300 focus:bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-3.5 px-4 bg-corporate-orange hover:bg-corporate-orangeHover text-white font-bold text-xs sm:text-sm rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-corporate-orange/20 flex justify-center items-center space-x-2"
+                    >
+                      {loading ? (
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      ) : (
+                        <span>Verify Credentials</span>
+                      )}
+                    </button>
+                  </form>
+                ) : (
+                  <form className="space-y-5" onSubmit={otpSent ? handleVerifyOtp : handleSendOtp}>
+                    {/* Email Field */}
+                    <div className="space-y-1">
+                      <label htmlFor="email" className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                        Corporate Email Address
+                      </label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                          <Mail className="w-4 h-4" />
+                        </span>
+                        <input
+                          id="email"
+                          type="email"
+                          required
+                          disabled={otpSent}
+                          placeholder="name@hindconnect.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3.5 border border-slate-200 focus:border-corporate-orange focus:ring-2 focus:ring-corporate-orange/20 rounded-xl text-xs sm:text-sm text-slate-800 transition-all shadow-sm bg-slate-50/30 hover:border-slate-300 focus:bg-white disabled:bg-slate-100 disabled:text-slate-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* OTP Code Field */}
+                    {otpSent && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label htmlFor="otpCode" className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                            6-Digit Verification Code
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => { setOtpSent(false); setOtpCode(''); setErrorMsg(''); setSuccessMsg(''); }}
+                            className="text-[10px] font-semibold text-corporate-orange hover:text-corporate-orangeHover"
+                          >
+                            Change Email
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                            <Lock className="w-4 h-4" />
+                          </span>
+                          <input
+                            id="otpCode"
+                            type="text"
+                            maxLength={6}
+                            required
+                            placeholder="123456"
+                            value={otpCode}
+                            onChange={(e) => setOtpCode(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3.5 border border-slate-200 focus:border-corporate-orange focus:ring-2 focus:ring-corporate-orange/20 rounded-xl text-xs sm:text-sm text-slate-800 transition-all shadow-sm bg-slate-50/30 hover:border-slate-300 focus:bg-white"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={loading || otpLoading}
+                      className="w-full py-3.5 px-4 bg-corporate-orange hover:bg-corporate-orangeHover text-white font-bold text-xs sm:text-sm rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-corporate-orange/20 flex justify-center items-center space-x-2"
+                    >
+                      {loading || otpLoading ? (
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      ) : (
+                        <span>{otpSent ? 'Verify & Sign In' : 'Request OTP Code'}</span>
+                      )}
+                    </button>
+                  </form>
+                )}
+              </div>
             )}
 
             {/* Toggle form button */}
@@ -476,6 +624,8 @@ export default function LoginPage({ onLoginSuccess }) {
                   setIsRegister(!isRegister);
                   setErrorMsg('');
                   setSuccessMsg('');
+                  setOtpSent(false);
+                  setOtpCode('');
                 }}
                 className="text-xs font-bold text-corporate-blue hover:text-corporate-orange cursor-pointer transition-colors border border-slate-200 rounded-xl px-4 py-2 hover:bg-slate-50 shadow-sm"
               >

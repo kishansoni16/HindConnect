@@ -40,6 +40,18 @@ export const api = {
     body: JSON.stringify({ name, email, password, role, department, ...profileDetails }),
   }).then(handleResponse),
 
+  sendOtp: (email) => fetch(`${API_BASE_URL}/auth/send-otp`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ email }),
+  }).then(handleResponse),
+
+  verifyOtp: (email, otp) => fetch(`${API_BASE_URL}/auth/verify-otp`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ email, otp }),
+  }).then(handleResponse),
+
   getMe: () => fetch(`${API_BASE_URL}/auth/me`, {
     method: 'GET',
     headers: getHeaders(),

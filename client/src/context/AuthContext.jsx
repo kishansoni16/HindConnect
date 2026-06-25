@@ -88,6 +88,30 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithOtp = async (email, otp) => {
+    try {
+      setLoading(true);
+      const data = await api.verifyOtp(email, otp);
+      localStorage.setItem('hindconnect_token', data.token);
+      setUser(data.user);
+      showAlert(`Welcome back, ${data.user.name}!`, 'success');
+      
+      try {
+        const notifData = await api.getNotifications();
+        setNotifications(notifData);
+      } catch (err) {
+        // Ignored
+      }
+      
+      return data.user;
+    } catch (error) {
+      showAlert(error.message || 'OTP verification failed', 'error');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('hindconnect_token');
     setUser(null);
@@ -122,6 +146,7 @@ export const AuthProvider = ({ children }) => {
     fetchNotifications,
     markNotificationsRead,
     login,
+    loginWithOtp,
     logout,
     updateUserProfile,
     alert,

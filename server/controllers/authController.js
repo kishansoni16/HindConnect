@@ -1,6 +1,10 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const { User } = require('../db');
+
+// In-memory OTP cache for email verification
+const otpCache = {};
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hindconnect_secret_key_2026';
 
@@ -245,9 +249,153 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email address is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'No registered corporate user account found with this email' });
+    }
+
+    if (user.isApproved === false) {
+      return res.status(403).json({ message: 'Your registration is pending approval by an IT Administrator.' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
+
+    // Store in cache
+    otpCache[email.toLowerCase()] = { otp, expiresAt };
+
+    // Check if SMTP is configured
+    const host = process.env.EMAIL_HOST;
+    const port = process.env.EMAIL_PORT;
+    const userEmail = process.env.EMAIL_USER;
+    const pass = process.env.EMAIL_PASS;
+
+    if (host && port && userEmail && pass) {
+      console.log(`Sending real OTP email to ${email} via SMTP...`);
+      const transporter = nodemailer.createTransport({
+        host,
+        port: parseInt(port),
+        secure: port === '465',
+        auth: {
+          user: userEmail,
+          pass: pass
+        }
+      });
+
+      const mailOptions = {
+        from: `"HindConnect Security" <${userEmail}>`,
+        to: email,
+        subject: 'HindConnect Corporate Login OTP Verification Code',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #0f2942; color: #ffffff; padding: 24px; text-align: center;">
+              <h2 style="margin: 0; font-size: 24px; letter-spacing: 0.5px;">HindConnect Auth</h2>
+              <p style="margin: 4px 0 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #f97316;">HINDALCO INDUSTRIES LIMITED</p>
+            </div>
+            <div style="padding: 32px; background-color: #ffffff; color: #334155;">
+              <p style="font-size: 15px; line-height: 1.5; margin-top: 0;">Hello ${user.name},</p>
+              <p style="font-size: 14px; line-height: 1.5;">You requested a password-less OTP verification code to access the HindConnect portal. Use the 6-digit code below to authenticate:</p>
+              
+              <div style="text-align: center; margin: 32px 0;">
+                <span style="display: inline-block; font-family: monospace; font-size: 36px; font-weight: 800; color: #f97316; letter-spacing: 6px; padding: 12px 24px; background-color: #fff7ed; border: 1px dashed #fdba74; border-radius: 6px;">${otp}</span>
+              </div>
+              
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin-bottom: 0;">* This verification code is valid for <strong>5 minutes</strong>. If you did not make this request, please contact the IT Security helpdesk immediately.</p>
+            </div>
+            <div style="background-color: #f8fafc; padding: 16px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8;">
+              © 2026 HindConnect. Authorized Corporate Access Only.
+            </div>
+          </div>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`OTP successfully sent to email: ${email}`);
+    } else {
+      // Fallback developer mode
+      console.log(`\n==================================================`);
+      console.log(`[MOCK EMAIL OTP] Sent to: ${email}`);
+      console.log(`[MOCK EMAIL OTP] Verification Code: ${otp}`);
+      console.log(`==================================================\n`);
+    }
+
+    res.json({ message: 'OTP verification code has been sent successfully.' });
+  } catch (error) {
+    console.error('sendOtp error:', error);
+    res.status(500).json({ message: 'Server error generating OTP' });
+  }
+};
+
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Please provide email and verification code' });
+    }
+
+    const record = otpCache[email.toLowerCase()];
+    if (!record) {
+      return res.status(400).json({ message: 'Invalid or expired OTP. Please request a new code.' });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      delete otpCache[email.toLowerCase()];
+      return res.status(400).json({ message: 'OTP has expired. Please request a new code.' });
+    }
+
+    if (record.otp !== otp.trim()) {
+      return res.status(400).json({ message: 'Incorrect verification code. Please check and try again.' });
+    }
+
+    // Success! Remove from cache so it cannot be reused
+    delete otpCache[email.toLowerCase()];
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const token = jwt.sign(
+      { id: user.id || user._id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id || user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        mobile: user.mobile,
+        bloodGroup: user.bloodGroup,
+        doj: user.doj,
+        empCode: user.empCode,
+        designation: user.designation,
+        emergencyContact: user.emergencyContact
+      }
+    });
+  } catch (error) {
+    console.error('verifyOtp error:', error);
+    res.status(500).json({ message: 'Server error verifying OTP' });
+  }
+};
+
 module.exports = {
   register,
   login,
+  sendOtp,
+  verifyOtp,
   getMe,
   getAllUsers,
   approveUser,
