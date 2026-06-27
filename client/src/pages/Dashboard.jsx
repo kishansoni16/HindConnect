@@ -224,8 +224,18 @@ export default function Dashboard() {
                   <Landmark className="w-4 h-4 text-corporate-orange" />
                   <span className="text-xs font-bold uppercase tracking-wider">Hindalco Employee Digital Identity Profile</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-[9px] bg-white/10 text-white border border-white/20 px-2 py-0.5 rounded font-bold uppercase">
+                <div className="flex items-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenEditModal();
+                    }}
+                    className="bg-corporate-orange hover:bg-corporate-orangeHover text-white text-[11px] font-extrabold px-3.5 py-1.5 rounded-lg shadow cursor-pointer transition-all active:scale-95 relative z-20"
+                  >
+                    Update Details
+                  </button>
+                  <span className="text-[9px] bg-white/10 text-white border border-white/20 px-2 py-0.5 rounded font-bold uppercase hidden sm:inline-block">
                     HC-Node Verified
                   </span>
                   <span className="text-white text-xs font-bold">
