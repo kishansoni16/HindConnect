@@ -107,11 +107,11 @@ export default function ChatbotWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none">
       {/* 1. Chat Window Container */}
       <div 
         className={`bg-white rounded-2xl shadow-premium border border-slate-200/80 w-[350px] sm:w-[380px] h-[500px] flex flex-col mb-4 overflow-hidden transition-all duration-300 transform origin-bottom-right ${
-          isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-10 pointer-events-none'
+          isOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-90 translate-y-10 pointer-events-none'
         }`}
       >
         {/* Header Section */}
@@ -217,7 +217,7 @@ export default function ChatbotWidget() {
       </div>
 
       {/* 2. Floating Toggle Button with Greeting Badge */}
-      <div className="flex items-center">
+      <div className="flex items-center pointer-events-auto">
         {!isOpen && (
           <div className="mr-3 bg-white/95 border border-amber-200/60 backdrop-blur-sm shadow-premium rounded-2xl py-2 px-3.5 text-[11px] font-extrabold text-amber-600 flex items-center space-x-1.5 animate-bounce select-none border-l-4 border-l-amber-500">
             <span>Namaste! Ask AI</span>
