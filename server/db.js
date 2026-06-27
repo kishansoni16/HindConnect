@@ -4,7 +4,9 @@ const mongoose = require('mongoose');
 const { createClient } = require('@supabase/supabase-js');
 const { v4: uuidv4 } = require('uuid');
 
-const JSON_DB_PATH = path.join(__dirname, 'database.json');
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NODE_ENV === 'production');
+const BUNDLED_DB_PATH = path.join(__dirname, 'database.json');
+const JSON_DB_PATH = isServerless ? '/tmp/database.json' : BUNDLED_DB_PATH;
 let useMongo = false;
 let useSupabase = false;
 let supabase = null;
@@ -81,6 +83,15 @@ let MongoUser, MongoTicket, MongoComment, MongoKb, MongoNotification, MongoActiv
 // Initialize JSON database if needed
 const initJsonDb = () => {
   if (!fs.existsSync(JSON_DB_PATH)) {
+    if (isServerless && fs.existsSync(BUNDLED_DB_PATH)) {
+      try {
+        const bundledData = fs.readFileSync(BUNDLED_DB_PATH, 'utf8');
+        fs.writeFileSync(JSON_DB_PATH, bundledData, 'utf8');
+        return;
+      } catch (err) {
+        console.error('Failed to copy bundled DB to /tmp:', err);
+      }
+    }
     const initialData = {
       users: [],
       tickets: [],
@@ -89,32 +100,48 @@ const initJsonDb = () => {
       notifications: [],
       activity_logs: []
     };
-    fs.writeFileSync(JSON_DB_PATH, JSON.stringify(initialData, null, 2), 'utf8');
+    try {
+      fs.writeFileSync(JSON_DB_PATH, JSON.stringify(initialData, null, 2), 'utf8');
+    } catch (err) {
+      console.error('Error writing initial JSON DB:', err);
+    }
   }
 };
 
 const readJsonDb = () => {
   try {
     initJsonDb();
-    const data = fs.readFileSync(JSON_DB_PATH, 'utf8');
-    return JSON.parse(data);
+    if (fs.existsSync(JSON_DB_PATH)) {
+      const data = fs.readFileSync(JSON_DB_PATH, 'utf8');
+      return JSON.parse(data);
+    }
   } catch (error) {
-    console.error('Error reading JSON DB, resetting file:', error);
-    const initialData = {
-      users: [],
-      tickets: [],
-      comments: [],
-      knowledge_base: [],
-      notifications: [],
-      activity_logs: []
-    };
-    fs.writeFileSync(JSON_DB_PATH, JSON.stringify(initialData, null, 2), 'utf8');
-    return initialData;
+    console.error('Error reading JSON DB:', error);
   }
+  if (isServerless && fs.existsSync(BUNDLED_DB_PATH)) {
+    try {
+      const data = fs.readFileSync(BUNDLED_DB_PATH, 'utf8');
+      return JSON.parse(data);
+    } catch (e) {
+      console.error('Error reading fallback bundled DB:', e);
+    }
+  }
+  return {
+    users: [],
+    tickets: [],
+    comments: [],
+    knowledge_base: [],
+    notifications: [],
+    activity_logs: []
+  };
 };
 
 const writeJsonDb = (data) => {
-  fs.writeFileSync(JSON_DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+  try {
+    fs.writeFileSync(JSON_DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error writing JSON DB:', err);
+  }
 };
 
 // JSON database collection wrapper to mimic Mongoose
