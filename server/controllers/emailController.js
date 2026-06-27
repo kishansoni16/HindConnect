@@ -137,35 +137,54 @@ Requirements:
 
 Write only the email body:`;
 
-    const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: process.env.OLLAMA_MODEL || 'llama3.2',
-        prompt,
-        stream: false,
-      }),
-    });
+    let generatedEmail = null;
+    try {
+      const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: process.env.OLLAMA_MODEL || 'llama3.2',
+          prompt,
+          stream: false,
+        }),
+      });
 
-    if (!ollamaResponse.ok) {
-      const errText = await ollamaResponse.text();
-      console.error('Ollama error:', errText);
-      return res.status(502).json({ message: 'Ollama AI service is unavailable. Make sure Ollama is running locally.' });
+      if (ollamaResponse.ok) {
+        const ollamaData = await ollamaResponse.json();
+        generatedEmail = ollamaData.response?.trim();
+      }
+    } catch (ollamaErr) {
+      console.log('Ollama local fetch failed, attempting cloud Gemini fallback...');
     }
 
-    const ollamaData = await ollamaResponse.json();
-    const generatedEmail = ollamaData.response?.trim();
+    // Cloud Fallback: Use Google Gemini API if deployed to Render/Vercel where Ollama isn't local
+    if (!generatedEmail && process.env.GEMINI_API_KEY) {
+      try {
+        console.log('Using Gemini cloud fallback for AI email drafting...');
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }]
+          })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          generatedEmail = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        }
+      } catch (geminiErr) {
+        console.error('Gemini fallback error:', geminiErr);
+      }
+    }
 
     if (!generatedEmail) {
-      return res.status(502).json({ message: 'Ollama returned an empty response' });
+      return res.status(502).json({ message: 'AI service unavailable. Ensure local Ollama is running or GEMINI_API_KEY is active.' });
     }
 
     res.json({ email: generatedEmail });
   } catch (err) {
     console.error('generateEmail error:', err);
-    if (err.code === 'ECONNREFUSED' || err.message?.includes('fetch failed')) {
-      return res.status(502).json({ message: 'Cannot connect to Ollama. Please ensure "ollama serve" is running on your machine.' });
-    }
     res.status(500).json({ message: 'Failed to generate email: ' + err.message });
   }
 };
