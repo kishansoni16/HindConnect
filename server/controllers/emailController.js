@@ -141,7 +141,7 @@ Write only the email body:`;
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: process.env.OLLAMA_MODEL || 'llama3',
+        model: process.env.OLLAMA_MODEL || 'llama3.2',
         prompt,
         stream: false,
       }),
