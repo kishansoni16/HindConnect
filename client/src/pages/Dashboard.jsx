@@ -10,7 +10,8 @@ import { Landmark, Menu, ShieldCheck, ChevronRight, X, LogOut } from 'lucide-rea
 
 const getDossierDetails = (user) => {
   if (!user) return null;
-  const getHash = (str) => {
+  const getHash = (str = '') => {
+    if (!str) return 0;
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -221,7 +222,7 @@ export default function Dashboard() {
               >
                 <div className="flex items-center space-x-2 text-white">
                   <Landmark className="w-4 h-4 text-corporate-orange" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Hindalco Employee Digital Identity Dossier</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">Hindalco Employee Digital Identity Profile</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-[9px] bg-white/10 text-white border border-white/20 px-2 py-0.5 rounded font-bold uppercase">
@@ -297,7 +298,7 @@ export default function Dashboard() {
                         }}
                         className="bg-corporate-orange hover:bg-corporate-orangeHover text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer relative z-10"
                       >
-                        Update Dossier Details
+                        Update Details
                       </button>
                     </div>
 
@@ -316,7 +317,7 @@ export default function Dashboard() {
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-zoom-in relative">
             <div className="px-6 py-4 bg-corporate-blue text-white flex items-center justify-between">
               <div>
-                <span className="text-[9px] uppercase font-extrabold tracking-widest text-corporate-orange">Dossier Details Update</span>
+                <span className="text-[9px] uppercase font-extrabold tracking-widest text-corporate-orange">Profile Details Update</span>
                 <h3 className="font-extrabold text-sm leading-tight">Edit Basic Profile Details</h3>
               </div>
               <button 
@@ -425,7 +426,7 @@ export default function Dashboard() {
                   disabled={saveLoading}
                   className="px-5 py-2 bg-corporate-orange hover:bg-corporate-orangeHover text-white rounded-xl text-xs font-bold transition-colors shadow"
                 >
-                  {saveLoading ? 'Saving...' : 'Save Dossier Details'}
+                  {saveLoading ? 'Saving...' : 'Save Details'}
                 </button>
               </div>
             </form>
