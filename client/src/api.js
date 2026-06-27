@@ -170,3 +170,5 @@ export const api = {
   }).then(handleResponse)
 };
 
+export default api;
+
