@@ -105,12 +105,17 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to HindConnect Enterprise IT Support API' });
 });
 
-// Start Server
-const startServer = async () => {
-  await connectDB();
-  app.listen(PORT, () => {
-    console.log(`HindConnect server running on port ${PORT}`);
-  });
-};
+// Start Server if run directly (local dev), otherwise connect DB for Vercel serverless
+if (require.main === module) {
+  const startServer = async () => {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`HindConnect server running on port ${PORT}`);
+    });
+  };
+  startServer();
+} else {
+  connectDB();
+}
 
-startServer();
+module.exports = app;
