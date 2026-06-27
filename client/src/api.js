@@ -167,6 +167,35 @@ export const api = {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ message, history }),
+  }).then(handleResponse),
+
+  // AI Email Complaint
+  getComplaintKeywords: () => fetch(`${API_BASE_URL}/complaint-keywords`, {
+    method: 'GET',
+    headers: getHeaders(),
+  }).then(handleResponse),
+
+  addComplaintKeyword: (keyword, category) => fetch(`${API_BASE_URL}/complaint-keywords`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ keyword, category }),
+  }).then(handleResponse),
+
+  incrementKeyword: (id) => fetch(`${API_BASE_URL}/complaint-keywords/${id}/increment`, {
+    method: 'POST',
+    headers: getHeaders(),
+  }).then(handleResponse),
+
+  generateEmail: (data) => fetch(`${API_BASE_URL}/generate-email`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  }).then(handleResponse),
+
+  sendComplaintEmail: (data) => fetch(`${API_BASE_URL}/send-email`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
   }).then(handleResponse)
 };
 

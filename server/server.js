@@ -10,6 +10,7 @@ const ticketController = require('./controllers/ticketController');
 const kbController = require('./controllers/kbController');
 const aiController = require('./controllers/aiController');
 const analyticsController = require('./controllers/analyticsController');
+const emailController = require('./controllers/emailController');
 
 dotenv.config();
 
@@ -91,6 +92,13 @@ app.get('/api/users/staff', authMiddleware, authorize(['Admin', 'IT Staff']), as
     res.status(500).json({ message: 'Server error loading IT staff list' });
   }
 });
+
+// 8. AI Email Complaint routes
+app.get('/api/complaint-keywords', authMiddleware, emailController.getKeywords);
+app.post('/api/complaint-keywords', authMiddleware, emailController.addKeyword);
+app.post('/api/complaint-keywords/:id/increment', authMiddleware, emailController.incrementKeyword);
+app.post('/api/generate-email', authMiddleware, emailController.generateEmail);
+app.post('/api/send-email', authMiddleware, emailController.sendEmail);
 
 // Base Route
 app.get('/', (req, res) => {
