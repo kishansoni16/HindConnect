@@ -142,8 +142,12 @@ export default function EmployeeDashboard({ onNavigateSubpage }) {
           <p className="text-xs text-corporate-textMuted mt-0.5">Welcome back, {user.name}. Track your open IT incidents.</p>
         </div>
         <button
-          onClick={() => onNavigateSubpage('raise_ticket')}
-          className="bg-corporate-orange hover:bg-corporate-orangeHover text-white text-xs font-bold px-4 py-2.5 rounded-lg flex items-center space-x-2 transition-colors self-start shadow"
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigateSubpage('raise_ticket');
+          }}
+          className="bg-corporate-orange hover:bg-corporate-orangeHover text-white text-xs font-bold px-4 py-2.5 rounded-lg flex items-center space-x-2 transition-all self-start shadow cursor-pointer relative z-20 active:scale-95"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Raise New Ticket</span>
