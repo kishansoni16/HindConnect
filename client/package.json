@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "postbuild": "node copy-dist.js",
+    "postbuild": "node copy-dist.cjs",
     "install-all": "npm install && (npm install --prefix ../server || true)",
     "lint": "eslint .",
     "preview": "vite preview"
