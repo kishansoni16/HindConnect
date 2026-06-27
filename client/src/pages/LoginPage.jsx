@@ -509,9 +509,17 @@ export default function LoginPage({ onLoginSuccess }) {
                         <label htmlFor="password" className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
                           AD Password
                         </label>
-                        <a className="text-[10px] font-semibold text-corporate-orange hover:text-corporate-orangeHover cursor-pointer">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsOtpMode(true);
+                            setErrorMsg('');
+                            setSuccessMsg('Switched to OTP Login. You can sign in using a verification code sent to your email.');
+                          }}
+                          className="text-[10px] font-semibold text-corporate-orange hover:text-corporate-orangeHover cursor-pointer underline decoration-dotted underline-offset-2"
+                        >
                           Forgot Password?
-                        </a>
+                        </button>
                       </div>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
