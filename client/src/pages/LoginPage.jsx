@@ -462,7 +462,7 @@ export default function LoginPage({ onLoginSuccess }) {
                     className={`py-3.5 px-4 text-xs font-bold text-center rounded-xl transition-all cursor-pointer border flex items-center justify-center space-x-2 ${
                       !isOtpMode 
                         ? 'bg-corporate-orange text-white border-corporate-orange shadow-md shadow-corporate-orange/15' 
-                        : 'bg-white text-slate-650 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                     }`}
                   >
                     <span>Password Login</span>
@@ -473,7 +473,7 @@ export default function LoginPage({ onLoginSuccess }) {
                     className={`py-3.5 px-4 text-xs font-bold text-center rounded-xl transition-all cursor-pointer border flex items-center justify-center space-x-2 ${
                       isOtpMode 
                         ? 'bg-corporate-orange text-white border-corporate-orange shadow-md shadow-corporate-orange/15' 
-                        : 'bg-white text-slate-650 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                     }`}
                   >
                     <span>OTP Login</span>
