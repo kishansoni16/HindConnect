@@ -331,6 +331,7 @@ export default function LoginPage({ onLoginSuccess }) {
                     >
                       <option value="Refinery">Refinery</option>
                       <option value="Smelter">Smelter</option>
+                      <option value="Cast House">Cast House</option>
                       <option value="Corporate">Corporate</option>
                       <option value="Logistics">Logistics</option>
                       <option value="Finance">Finance</option>
@@ -380,9 +381,8 @@ export default function LoginPage({ onLoginSuccess }) {
                     </label>
                     <input
                       id="regDoj"
-                      type="text"
+                      type="date"
                       required
-                      placeholder="e.g. 15 Aug 2024"
                       value={regDoj}
                       onChange={(e) => setRegDoj(e.target.value)}
                       className="w-full px-3 py-3 border border-slate-200 focus:border-corporate-orange focus:ring-2 focus:ring-corporate-orange/20 rounded-xl text-xs sm:text-sm text-slate-800 outline-none bg-white transition-all hover:border-slate-300"

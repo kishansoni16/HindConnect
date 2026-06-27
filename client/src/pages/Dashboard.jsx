@@ -360,9 +360,8 @@ export default function Dashboard() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Date of Joining</label>
                   <input
-                    type="text"
+                    type="date"
                     required
-                    placeholder="e.g. 15 Aug 2024"
                     value={editDoj}
                     onChange={(e) => setEditDoj(e.target.value)}
                     className="w-full px-3 py-2 border border-corporate-grayBorder rounded-xl text-xs outline-none bg-white text-slate-800"
