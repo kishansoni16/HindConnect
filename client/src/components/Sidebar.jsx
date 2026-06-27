@@ -11,7 +11,8 @@ import {
   Users, 
   AlertOctagon,
   LogOut,
-  FolderOpen
+  FolderOpen,
+  Mail
 } from 'lucide-react';
 
 export default function Sidebar({ currentSubpage, onSubpageChange }) {
@@ -26,6 +27,7 @@ export default function Sidebar({ currentSubpage, onSubpageChange }) {
       { id: 'dashboard_home', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'raise_ticket', label: 'Raise Ticket', icon: PlusCircle },
       { id: 'my_tickets', label: 'My Tickets', icon: Ticket },
+      { id: 'ai_email', label: 'AI Email Complaint', icon: Mail },
       { id: 'kb', label: 'Knowledge Base', icon: BookOpen },
     ],
     'IT Staff': [
