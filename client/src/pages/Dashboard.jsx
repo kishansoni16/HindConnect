@@ -299,18 +299,7 @@ export default function Dashboard() {
                       <span className="font-bold text-slate-800 block">{getDossierDetails(user)?.emergencyContact}</span>
                     </div>
 
-                    <div className="col-span-2 sm:col-span-3 flex justify-end pt-4 border-t border-slate-100/50">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenEditModal();
-                        }}
-                        className="bg-corporate-orange hover:bg-corporate-orangeHover text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer relative z-10"
-                      >
-                        Update Details
-                      </button>
-                    </div>
+
 
                   </div>
                 </div>
