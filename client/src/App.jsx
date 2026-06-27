@@ -23,13 +23,13 @@ function AppContent() {
   const handleNavigate = (page) => {
     if (page === 'dashboard' && !user) {
       setCurrentPage('login');
-    } else if (page === 'services') {
+    } else if (page === 'services' || page === 'it-support') {
       setCurrentPage('landing');
-      // Scroll to services section
+      const targetId = page === 'services' ? 'services-section' : 'it-support-section';
       setTimeout(() => {
-        const servicesSection = document.getElementById('services-section');
-        if (servicesSection) {
-          servicesSection.scrollIntoView({ behavior: 'smooth' });
+        const section = document.getElementById(targetId);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth' });
         }
       }, 100);
     } else {
@@ -68,11 +68,7 @@ function AppContent() {
     switch (currentPage) {
       case 'landing':
         return (
-          <>
-            <LandingPage onNavigate={handleNavigate} />
-            {/* Target ID for navbar scroll */}
-            <div id="services-section"></div>
-          </>
+          <LandingPage onNavigate={handleNavigate} />
         );
       case 'login':
         return <LoginPage onLoginSuccess={() => setCurrentPage('dashboard')} />;

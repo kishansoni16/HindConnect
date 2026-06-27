@@ -189,7 +189,7 @@ export default function LandingPage({ onNavigate }) {
       </section>
 
       {/* 2. Values Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section id="services-section" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center space-y-3 mb-16">
           <h2 className="text-xs font-bold uppercase tracking-widest text-corporate-orange">Our Core Standards</h2>
           <h3 className="text-3xl font-extrabold text-corporate-blue tracking-tight">Inspired by Corporate Values</h3>
@@ -235,7 +235,7 @@ export default function LandingPage({ onNavigate }) {
       </section>
 
       {/* 3. Services Section */}
-      <section className="bg-white border-y border-corporate-grayBorder py-20 px-4 sm:px-6 lg:px-8">
+      <section id="it-support-section" className="bg-white border-y border-corporate-grayBorder py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center space-y-3 mb-16">
             <h2 className="text-xs font-bold uppercase tracking-widest text-corporate-orange">Features Index</h2>

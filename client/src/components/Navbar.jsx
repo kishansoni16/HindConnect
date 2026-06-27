@@ -45,7 +45,7 @@ export default function Navbar({ onNavigate, currentPage }) {
   const navItems = [
     { label: 'Home', id: 'landing' },
     { label: 'Services', id: 'services' },
-    { label: 'IT Support', id: 'dashboard' },
+    { label: 'IT Support', id: 'it-support' },
     { label: 'Knowledge Base', id: 'kb' },
   ];
 
