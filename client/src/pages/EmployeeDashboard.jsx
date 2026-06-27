@@ -143,12 +143,13 @@ export default function EmployeeDashboard({ onNavigateSubpage }) {
         </div>
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onNavigateSubpage('raise_ticket');
+          onClick={() => {
+            if (typeof onNavigateSubpage === 'function') {
+              onNavigateSubpage('raise_ticket');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
           }}
-          className="bg-corporate-orange hover:bg-corporate-orangeHover text-white text-xs font-extrabold px-5 py-3 rounded-xl flex items-center space-x-2 transition-all self-start shadow-md hover:shadow-lg cursor-pointer relative z-30 active:scale-95"
+          className="bg-corporate-orange hover:bg-corporate-orangeHover text-white text-xs font-extrabold px-6 py-3.5 rounded-xl flex items-center space-x-2.5 transition-all self-start shadow-lg hover:shadow-xl cursor-pointer relative z-[100] active:scale-95 border border-white/20 select-none"
         >
           <PlusCircle className="w-4 h-4 shrink-0" />
           <span>Raise New Ticket</span>
