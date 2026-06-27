@@ -5,6 +5,7 @@ import CreateTicketPage from './CreateTicketPage';
 import ItStaffDashboard from './ItStaffDashboard';
 import AdminDashboard from './AdminDashboard';
 import KnowledgeBasePage from './KnowledgeBasePage';
+import AIEmailPage from './AIEmailPage';
 import { useAuth } from '../context/AuthContext';
 import { Landmark, Menu, ShieldCheck, ChevronRight, X, LogOut } from 'lucide-react';
 
@@ -18,34 +19,34 @@ const getDossierDetails = (user) => {
     }
     return Math.abs(hash);
   };
-  
+
   const hash = getHash(user.email || user.name);
   const isSeeded = user.email && (
-    user.email.endsWith('@hindconnect.com') && 
-    !user.email.includes('.new') && 
+    user.email.endsWith('@hindconnect.com') &&
+    !user.email.includes('.new') &&
     user.email !== 'vishesh4757@gmail.com'
   );
 
   const mobile = user.mobile || (isSeeded ? `+91 987${(hash % 900000) + 100000}` : 'Not Set');
   const bloodGroups = ['A+', 'B+', 'O+', 'AB+', 'A-', 'B-', 'O-', 'AB-'];
   const bloodGroup = user.bloodGroup || (isSeeded ? bloodGroups[hash % bloodGroups.length] : 'Not Set');
-  
+
   const yearsAgo = (hash % 6) + 1;
   const doj = user.doj || (isSeeded ? new Date(2026 - yearsAgo, hash % 12, (hash % 28) + 1).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'short',
     year: 'numeric'
   }) : 'Not Set');
-  
+
   const empCode = user.empCode || (isSeeded ? `HC-EMP-${(hash % 90000) + 10000}` : 'Not Set');
-  
+
   const designationMap = {
     Employee: 'Operations Supervisor',
     'IT Staff': 'Network Systems Administrator',
     Admin: 'Principal Systems Administrator'
   };
   const designation = user.designation || (isSeeded ? (designationMap[user.role] || 'Associate Engineer') : 'Not Set');
-  
+
   const emergencyContact = user.emergencyContact || (isSeeded ? `+91 961${(hash % 800000) + 100000}` : 'Not Set');
 
   return { mobile, bloodGroup, doj, empCode, designation, emergencyContact };
@@ -151,6 +152,8 @@ export default function Dashboard() {
         return <CreateTicketPage onNavigateSubpage={setCurrentSubpage} />;
       case 'my_tickets':
         return <EmployeeDashboard onNavigateSubpage={setCurrentSubpage} />;
+      case 'ai_email':
+        return <AIEmailPage />;
 
       // IT Staff subpages
       case 'staff_home':
@@ -191,7 +194,7 @@ export default function Dashboard() {
               {currentSubpage.replace('_', ' ')}
             </span>
           </div>
-          
+
           <div className="flex items-center space-x-3 text-xs text-slate-500 font-semibold">
             <span className="bg-corporate-orange/15 text-corporate-orange px-2 py-0.5 rounded border border-corporate-orange/20 font-bold uppercase tracking-wider text-[9px]">
               AD Active
@@ -216,7 +219,7 @@ export default function Dashboard() {
           {user && (
             <div className="bg-white border border-corporate-grayBorder rounded-2xl shadow-premium overflow-hidden transition-all duration-300">
               {/* Header ribbon */}
-              <div 
+              <div
                 onClick={() => setIsProfileExpanded(!isProfileExpanded)}
                 className="bg-gradient-to-r from-corporate-blue to-corporate-blueLight px-6 py-3 flex justify-between items-center cursor-pointer select-none"
               >
@@ -246,7 +249,7 @@ export default function Dashboard() {
 
               {isProfileExpanded && (
                 <div className="p-6 bg-gradient-to-r from-slate-50/50 via-white to-white grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                  
+
                   {/* Photo / Avatar Section (Col-span-3) */}
                   <div className="md:col-span-3 flex flex-col items-center justify-center text-center space-y-3 border-r border-slate-100 pr-0 md:pr-6">
                     <div className="relative">
@@ -268,7 +271,7 @@ export default function Dashboard() {
 
                   {/* Profile Details Grid (Col-span-9) */}
                   <div className="md:col-span-9 grid grid-cols-2 sm:grid-cols-3 gap-6 text-xs pl-0 md:pl-2">
-                    
+
                     <div className="space-y-1">
                       <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">Corporate Email</span>
                       <span className="font-bold text-corporate-blue block break-all">{user.email}</span>
@@ -280,7 +283,7 @@ export default function Dashboard() {
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">Department Node</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">Department </span>
                       <span className="font-bold text-slate-800 block">{user.department}</span>
                     </div>
 
@@ -295,7 +298,7 @@ export default function Dashboard() {
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">Emergency Support Node</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">Emergency Support Number</span>
                       <span className="font-bold text-slate-800 block">{getDossierDetails(user)?.emergencyContact}</span>
                     </div>
 
@@ -319,7 +322,7 @@ export default function Dashboard() {
                 <span className="text-[9px] uppercase font-extrabold tracking-widest text-corporate-orange">Profile Details Update</span>
                 <h3 className="font-extrabold text-sm leading-tight">Edit Basic Profile Details</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="p-1 rounded-full text-slate-300 hover:text-white transition-colors"
               >
