@@ -246,38 +246,59 @@ class SupabaseModel {
   }
 
   async find(query = {}) {
-    let q = supabase.from(this.tableName).select('*');
-    for (let key in query) {
-      if (key === '_id' || key === 'id') {
-        q = q.or(`id.eq.${query[key]},_id.eq.${query[key]}`);
-      } else if (query[key] !== undefined && query[key] !== null) {
-        q = q.eq(key, query[key]);
+    try {
+      let q = supabase.from(this.tableName).select('*');
+      for (let key in query) {
+        if (key === '_id' || key === 'id') {
+          q = q.or(`id.eq.${query[key]},_id.eq.${query[key]}`);
+        } else if (query[key] !== undefined && query[key] !== null) {
+          q = q.eq(key, query[key]);
+        }
       }
+      const { data, error } = await q;
+      if (error) {
+        if (error.code === '42703' || (error.message && error.message.includes('column'))) {
+          console.warn(`Supabase find column missing fallback on ${this.tableName}:`, error.message);
+          return [];
+        }
+        console.error(`Supabase find error on ${this.tableName}:`, error);
+        throw error;
+      }
+      return (data || []).map(item => ({ ...item, _id: item.id || item._id, id: item.id || item._id }));
+    } catch (err) {
+      if (err.code === '42703' || (err.message && err.message.includes('column'))) {
+        return [];
+      }
+      throw err;
     }
-    const { data, error } = await q;
-    if (error) {
-      console.error(`Supabase find error on ${this.tableName}:`, error);
-      throw error;
-    }
-    return (data || []).map(item => ({ ...item, _id: item.id || item._id, id: item.id || item._id }));
   }
 
   async findOne(query = {}) {
-    let q = supabase.from(this.tableName).select('*');
-    for (let key in query) {
-      if (key === '_id' || key === 'id') {
-        q = q.or(`id.eq.${query[key]},_id.eq.${query[key]}`);
-      } else if (query[key] !== undefined && query[key] !== null) {
-        q = q.eq(key, query[key]);
+    try {
+      let q = supabase.from(this.tableName).select('*');
+      for (let key in query) {
+        if (key === '_id' || key === 'id') {
+          q = q.or(`id.eq.${query[key]},_id.eq.${query[key]}`);
+        } else if (query[key] !== undefined && query[key] !== null) {
+          q = q.eq(key, query[key]);
+        }
       }
+      const { data, error } = await q.limit(1);
+      if (error) {
+        if (error.code === '42703' || (error.message && error.message.includes('column'))) {
+          return null;
+        }
+        console.error(`Supabase findOne error on ${this.tableName}:`, error);
+        throw error;
+      }
+      if (!data || data.length === 0) return null;
+      return { ...data[0], _id: data[0].id, id: data[0].id };
+    } catch (err) {
+      if (err.code === '42703' || (err.message && err.message.includes('column'))) {
+        return null;
+      }
+      throw err;
     }
-    const { data, error } = await q.limit(1);
-    if (error) {
-      console.error(`Supabase findOne error on ${this.tableName}:`, error);
-      throw error;
-    }
-    if (!data || data.length === 0) return null;
-    return { ...data[0], _id: data[0].id, id: data[0].id };
   }
 
   async findById(id) {
