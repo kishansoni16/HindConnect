@@ -244,7 +244,7 @@ Recipient Role: ${recipientRole || 'Department Head'}
 Issues/Complaints: ${issueList}
 
 Requirements:
-- Start with "Dear ${recipientName || 'Sir/Ma\'am'},"
+- Start with "Respected Sir/Ma'am," or "Respected ${recipientName},"
 - Keep it professional and respectful
 - Be specific about the issue
 - Request prompt action
