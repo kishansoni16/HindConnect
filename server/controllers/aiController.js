@@ -158,28 +158,6 @@ const chatAssistant = async (req, res) => {
       return res.status(400).json({ message: 'Message text is required' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.json({
-        text: "I'm sorry, the HindConnect AI assistant is currently running in offline fallback mode. Please configure the GEMINI_API_KEY. To help you: VPN portal is vpn.hindalco.com, printer queue is \\\\prnt-srv-corp\\HindPrint-Secure, and AD password reset is at identity.hindalco.com."
-      });
-    }
-
-    const contents = [];
-    if (history && Array.isArray(history)) {
-      history.forEach(h => {
-        contents.push({
-          role: h.sender === 'user' ? 'user' : 'model',
-          parts: [{ text: h.text }]
-        });
-      });
-    }
-
-    contents.push({
-      role: 'user',
-      parts: [{ text: message }]
-    });
-
     const systemInstructionText = `
 You are the HindConnect IT Assistant, an advanced virtual agent dedicated to helping employees of Hindalco plants (refineries like Refinery, smelters like Smelter, logistics, finance, IT departments) with technical support and IT queries.
 
@@ -195,35 +173,28 @@ Follow these corporate rules and technical specifications strictly:
 Tone: Professional, direct, helpful, and concise. Format your responses with clean Markdown (bullet points, bold text). Keep responses to 2-3 paragraphs max so they fit comfortably in a chat window.
 `;
 
-    const requestBody = {
-      contents,
-      systemInstruction: {
-        parts: [{ text: systemInstructionText }]
-      }
-    };
+    const formattedHistory = (history && Array.isArray(history))
+      ? history.map(h => `${h.sender === 'user' ? 'User' : 'Assistant'}: ${h.text}`).join('\n')
+      : '';
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const prompt = `${systemInstructionText}\n\nChat History:\n${formattedHistory}\n\nUser: ${message}\nAssistant:`;
 
-    const response = await fetch(url, {
+    const response = await fetch('http://localhost:11434/api/generate', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: process.env.OLLAMA_MODEL || 'llama3.2',
+        prompt,
+        stream: false,
+      }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API request failed:', errorText);
-      throw new Error(`Gemini API returned status ${response.status}`);
+      throw new Error(`Ollama returned status ${response.status}`);
     }
 
     const data = await response.json();
-    let textReply = "I'm sorry, I couldn't process your request at this moment.";
-    
-    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
-      textReply = data.candidates[0].content.parts[0].text;
-    }
+    const textReply = data.response?.trim() || "I'm sorry, I couldn't process your request at this moment.";
 
     res.json({ text: textReply });
   } catch (error) {
