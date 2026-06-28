@@ -391,6 +391,23 @@ const verifyOtp = async (req, res) => {
   }
 };
 
+const getRecipients = async (req, res) => {
+  try {
+    const users = await User.find({});
+    const formatted = users.map(u => ({
+      id: u.id || u._id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      department: u.department
+    }));
+    res.json(formatted);
+  } catch (error) {
+    console.error('getRecipients error:', error);
+    res.status(500).json({ message: 'Server error retrieving recipient list' });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -400,5 +417,6 @@ module.exports = {
   getAllUsers,
   approveUser,
   updateProfile,
+  getRecipients,
   JWT_SECRET
 };

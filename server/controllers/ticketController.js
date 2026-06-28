@@ -18,7 +18,7 @@ const calculateSla = (priority) => {
 
 const createTicket = async (req, res) => {
   try {
-    const { title, description, category, priority, department, attachments } = req.body;
+    const { title, description, category, priority, department, attachments, recipientId, recipientName } = req.body;
     const employeeId = req.user.id;
 
     if (!title || !description || !category || !priority || !department) {
@@ -40,6 +40,9 @@ const createTicket = async (req, res) => {
       status: 'Open',
       department,
       employeeId,
+      employeeName: userObj.name,
+      recipientId: recipientId || null,
+      recipientName: recipientName || null,
       assignedTo: null,
       slaDeadline,
       attachments: attachments || [],
@@ -51,8 +54,21 @@ const createTicket = async (req, res) => {
       action: 'Ticket Created',
       userId: employeeId,
       userName: userObj.name,
-      details: `Ticket created by ${userObj.name} (${userObj.role}) with priority: ${priority}.`
+      details: `Ticket created by ${userObj.name} (${userObj.role})${recipientName ? ` routed to ${recipientName}` : ''} with priority: ${priority}.`
     });
+
+    // Notify Recipient if specified
+    if (recipientId) {
+      try {
+        await Notification.create({
+          userId: recipientId,
+          message: `New ticket "${title}" has been raised to you by ${userObj.name}.`,
+          isRead: false
+        });
+      } catch (notifErr) {
+        console.warn('Failed to notify recipient:', notifErr.message);
+      }
+    }
 
     res.status(201).json(ticket);
   } catch (error) {
@@ -66,19 +82,28 @@ const getTickets = async (req, res) => {
     const { role, id: userId } = req.user;
     const { status, priority, category, search } = req.query;
 
-    let query = {};
+    let tickets = [];
 
     // Role-based visibility
     if (role === 'Employee') {
-      query.employeeId = userId;
+      const createdTickets = await Ticket.find({ employeeId: userId });
+      const receivedTickets = await Ticket.find({ recipientId: userId });
+      const combined = [...createdTickets, ...receivedTickets];
+      const seen = new Set();
+      tickets = combined.filter(t => {
+        const id = t.id || t._id;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+    } else {
+      tickets = await Ticket.find({});
     }
 
     // Filters
-    if (status) query.status = status;
-    if (priority) query.priority = priority;
-    if (category) query.category = category;
-
-    let tickets = await Ticket.find(query);
+    if (status) tickets = tickets.filter(t => t.status === status);
+    if (priority) tickets = tickets.filter(t => t.priority === priority);
+    if (category) tickets = tickets.filter(t => t.category === category);
 
     // Manual search filtering (needed for both Mongo and JSONDB arrays)
     if (search) {

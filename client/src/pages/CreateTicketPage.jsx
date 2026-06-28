@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { Landmark, ArrowLeft, Upload, Send, Cpu, X } from 'lucide-react';
@@ -11,7 +11,24 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
   const [description, setDescription] = useState('');
   const [department, setDepartment] = useState(user?.department || 'Refinery');
   const [urgency, setUrgency] = useState('Medium');
+  const [recipientId, setRecipientId] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [recipients, setRecipients] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchRecipients = async () => {
+      try {
+        const data = await api.getRecipients();
+        // filter out current user
+        const filtered = data.filter(u => u.id !== user?.id && u._id !== user?.id && u.id !== user?._id && u._id !== user?._id);
+        setRecipients(filtered);
+      } catch (err) {
+        console.error('Failed to load recipients:', err);
+      }
+    };
+    fetchRecipients();
+  }, [user]);
   
   // Attachments State
   const [attachments, setAttachments] = useState([]);
@@ -25,8 +42,8 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
 
   const processFiles = (files) => {
     files.forEach(file => {
-      if (file.size > 10 * 1024 * 1024) {
-        showAlert(`File ${file.name} exceeds 10MB limit`, 'warning');
+      if (file.size > 20 * 1024 * 1024) {
+        showAlert(`File ${file.name} exceeds 20MB limit`, 'warning');
         return;
       }
       const reader = new FileReader();
@@ -91,7 +108,9 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
         department,
         priority: urgency,
         category: 'Software',
-        attachments: attachments
+        attachments: attachments,
+        recipientId: recipientId || null,
+        recipientName: recipientName || null
       };
 
       await api.createTicket(payload);
@@ -126,6 +145,31 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
         {/* Form Container */}
         <div className="bg-white border border-corporate-grayBorder rounded-2xl p-6 shadow-sm flex flex-col justify-between">
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Recipient Selection */}
+            <div className="space-y-1.5">
+              <label htmlFor="ticket-recipient" className="text-xs font-bold text-slate-700 uppercase tracking-wide block">
+                Assign/Send Ticket To (Recipient)
+              </label>
+              <select
+                id="ticket-recipient"
+                value={recipientId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setRecipientId(val);
+                  const selected = recipients.find(r => r.id === val);
+                  setRecipientName(selected ? selected.name : '');
+                }}
+                className="w-full px-4 py-3 border border-corporate-grayBorder focus:border-corporate-blue focus:ring-1 focus:ring-corporate-blue rounded-xl text-xs sm:text-sm text-slate-800 outline-none bg-white font-semibold"
+              >
+                <option value="">Default (IT Standby Support / Unassigned)</option>
+                {recipients.map((r) => (
+                  <option key={r.id || r._id} value={r.id || r._id}>
+                    {r.name} ({r.role} - {r.department})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Title */}
             <div className="space-y-1.5">
               <label htmlFor="ticket-title" className="text-xs font-bold text-slate-700 uppercase tracking-wide block">
@@ -225,7 +269,7 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
                 <span className="text-[11px] text-slate-500 font-semibold block mt-1.5">
                   {dragActive ? 'Drop files here' : 'Drag files or browse local disk'}
                 </span>
-                <span className="text-[9px] text-slate-400 block mt-0.5">JPEG, PNG, LOG, TXT formats up to 10MB</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">JPEG, PNG, LOG, TXT formats up to 20MB</span>
               </div>
 
               {/* Attachments List */}

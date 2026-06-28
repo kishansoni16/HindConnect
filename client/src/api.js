@@ -146,6 +146,11 @@ export const api = {
     headers: getHeaders(),
   }).then(handleResponse),
 
+  getRecipients: () => fetch(`${API_BASE_URL}/users/recipients`, {
+    method: 'GET',
+    headers: getHeaders(),
+  }).then(handleResponse),
+
   // Admin User Management
   updateProfile: (profileData) => fetch(`${API_BASE_URL}/users/profile`, {
     method: 'PUT',

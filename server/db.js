@@ -38,6 +38,9 @@ const ticketSchema = new mongoose.Schema({
   status: { type: String, enum: ['Open', 'Pending', 'Resolved', 'Closed'], default: 'Open' },
   department: { type: String, required: true },
   employeeId: { type: String, required: true },
+  employeeName: { type: String, default: null },
+  recipientId: { type: String, default: null },
+  recipientName: { type: String, default: null },
   assignedTo: { type: String, default: null },
   slaDeadline: { type: Date },
   attachments: { type: Array, default: [] },
@@ -215,8 +218,9 @@ const TABLE_COLUMNS = {
   ],
   tickets: [
     'id', '_id', 'title', 'description', 'category', 'priority', 
-    'status', 'department', 'employeeId', 'assignedTo', 'slaDeadline', 
-    'attachments', 'createdAt', 'updatedAt'
+    'status', 'department', 'employeeId', 'employeeName', 'recipientId', 
+    'recipientName', 'assignedTo', 'slaDeadline', 'attachments', 
+    'createdAt', 'updatedAt'
   ],
   comments: [
     'id', '_id', 'ticketId', 'userId', 'userName', 'userRole', 

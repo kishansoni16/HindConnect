@@ -40,6 +40,7 @@ app.post('/api/auth/send-otp', authController.sendOtp);
 app.post('/api/auth/verify-otp', authController.verifyOtp);
 app.get('/api/auth/me', authMiddleware, authController.getMe);
 app.put('/api/users/profile', authMiddleware, authController.updateProfile);
+app.get('/api/users/recipients', authMiddleware, authController.getRecipients);
 app.get('/api/users', authMiddleware, authorize(['Admin']), authController.getAllUsers);
 app.put('/api/users/:id/approve', authMiddleware, authorize(['Admin']), authController.approveUser);
 
