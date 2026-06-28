@@ -245,12 +245,14 @@ Issues/Complaints: ${issueList}
 
 Requirements:
 - Start with "Respected Sir/Ma'am," or "Respected ${recipientName},"
-- Keep it professional and respectful
-- Be specific about the issue
-- Request prompt action
-- End with "Regards," followed by the employee name and department
-- Do NOT add any explanation or preamble outside the email body
-- Keep it under 200 words
+- Write in a natural, human-like, and professional tone using simple, easy English.
+- Avoid robotic, complex, or overly formal template language.
+- Keep the email body very short, direct, and strictly to the point.
+- Be specific about the issue.
+- Request prompt action.
+- End with "Regards," followed by the employee name and department.
+- Do NOT add any subject line, headers, explanation, or preamble outside the email body.
+- Keep the entire body under 100 words.
 
 Write only the email body:`;
 
