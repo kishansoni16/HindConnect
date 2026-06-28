@@ -60,8 +60,14 @@ const createTicket = async (req, res) => {
     // Notify Recipient if specified
     if (recipientId) {
       try {
+        let targetUserId = recipientId;
+        // Check if the recipient email matches a registered user in the database
+        const targetUser = await User.findOne({ email: recipientId });
+        if (targetUser) {
+          targetUserId = targetUser.id || targetUser._id;
+        }
         await Notification.create({
-          userId: recipientId,
+          userId: targetUserId,
           message: `New ticket "${title}" has been raised to you by ${userObj.name}.`,
           isRead: false
         });
@@ -87,8 +93,13 @@ const getTickets = async (req, res) => {
     // Role-based visibility
     if (role === 'Employee') {
       const createdTickets = await Ticket.find({ employeeId: userId });
-      const receivedTickets = await Ticket.find({ recipientId: userId });
-      const combined = [...createdTickets, ...receivedTickets];
+      const userObj = await User.findById(userId);
+      const userEmail = userObj?.email;
+
+      const receivedById = await Ticket.find({ recipientId: userId });
+      const receivedByEmail = userEmail ? await Ticket.find({ recipientId: userEmail }) : [];
+
+      const combined = [...createdTickets, ...receivedById, ...receivedByEmail];
       const seen = new Set();
       tickets = combined.filter(t => {
         const id = t.id || t._id;
