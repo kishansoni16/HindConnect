@@ -8,7 +8,7 @@ import {
 
 // ── Recipient directory by department ────────────────────────────────────────
 const RECIPIENT_DIRECTORY = [
-  { label: 'IT Department Head',        email: 'it.head@hindalco.com',          department: 'IT' },
+  { label: 'IT Department Head',        email: 'jalakerakh@gmail.com',          department: 'IT' },
   { label: 'HR Department Head',        email: 'hr.head@hindalco.com',          department: 'HR' },
   { label: 'Maintenance Incharge',      email: 'maintenance@hindalco.com',      department: 'Maintenance' },
   { label: 'Plant Manager',             email: 'plantmanager@hindalco.com',     department: 'Operations' },
