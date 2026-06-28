@@ -163,11 +163,50 @@ export const api = {
     headers: getHeaders(),
   }).then(handleResponse),
 
-  chat: (message, history = []) => fetch(`${API_BASE_URL}/ai/chat`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ message, history }),
-  }).then(handleResponse),
+  chat: async (message, history = []) => {
+    const systemInstructionText = `
+You are the HindConnect IT Assistant, an advanced virtual agent dedicated to helping employees of Hindalco plants (refineries like Refinery, smelters like Smelter, logistics, finance, IT departments) with technical support and IT queries.
+
+Follow these corporate rules and technical specifications strictly:
+1. VPN Access: Use GlobalProtect VPN client portal address "vpn.hindalco.com". It requires an active HindConnect Active Directory (AD) login and Multi-Factor Authentication (MFA) approved on a registered mobile device.
+2. Network Printers: Printers are HP/Ricoh. Map your badge on first swipe by tapping "Yes" and entering AD credentials. Windows print queue path is "\\\\prnt-srv-corp\\HindPrint-Secure".
+3. Active Directory Password Reset: AD Self-Service Password Reset (SSPR) portal is "https://identity.hindalco.com". Passwords expire every 90 days. Minimum length is 12 characters with uppercase, numbers, and symbols.
+4. SAP S/4HANA ERP Access: Access is requested via GRC Portal "https://grc.hindalco.com" using AD credentials. Transaction codes like ME21N (Purchase Orders) or FB01 (Accounting) must have business justification and manager approval.
+5. SLA Guidelines: Critical incidents (4 hours resolution), High (24 hours), Medium (48 hours), Low (72 hours).
+6. Incidents: If user wants to check/track/submit tickets, tell them to log in to HindConnect portal and access the ticket dashboard.
+7. Multilingual Support: If the user asks their question in Hindi (either in Hindi script like "पासवर्ड कैसे रीसेट करें?" or transliterated Hinglish like "password reset kaise kare"), or asks you to answer in Hindi, you MUST respond entirely in Hindi. Keep the Hindi response natural, polite, and clear, using standard English terms for technical jargon (like VPN, Active Directory, SAP, printer, etc.) where helpful.
+
+Tone: Professional, direct, helpful, and concise. Format your responses with clean Markdown (bullet points, bold text). Keep responses to 2-3 paragraphs max so they fit comfortably in a chat window.
+`;
+
+    const formattedHistory = history.map(h => `${h.sender === 'user' ? 'User' : 'Assistant'}: ${h.text}`).join('\n');
+    const prompt = `${systemInstructionText}\n\nChat History:\n${formattedHistory}\n\nUser: ${message}\nAssistant:`;
+
+    // Attempt direct local connection to local Ollama from client's browser
+    try {
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama3.2',
+          prompt,
+          stream: false,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return { text: data.response?.trim() || "I'm sorry, I couldn't process your request." };
+      }
+    } catch (err) {
+      console.warn('Client-side local Ollama fetch failed, calling backend fallback...', err.message);
+    }
+
+    return fetch(`${API_BASE_URL}/ai/chat`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ message, history }),
+    }).then(handleResponse);
+  },
 
   // AI Email Complaint
   getComplaintKeywords: () => fetch(`${API_BASE_URL}/complaint-keywords`, {
@@ -186,11 +225,47 @@ export const api = {
     headers: getHeaders(),
   }).then(handleResponse),
 
-  generateEmail: (data) => fetch(`${API_BASE_URL}/generate-email`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  }).then(handleResponse),
+  generateEmail: async (data) => {
+    const { category, details, keywords } = data;
+    const prompt = `Write a professional IT complaint email draft based on the following details:
+Category: ${category}
+Details: ${details}
+Keywords to emphasize: ${(keywords || []).join(', ')}
+
+Please structure the email with:
+1. Clear Subject Line
+2. Professional salutation
+3. Problem description incorporating the selected keywords
+4. Expected resolution or SLA reference (Critical, High, Medium, Low)
+5. Professional sign-off placeholder.
+
+Write only the email body:`;
+
+    // Attempt direct local connection to local Ollama from client's browser
+    try {
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama3.2',
+          prompt,
+          stream: false,
+        }),
+      });
+      if (response.ok) {
+        const resData = await response.json();
+        return { email: resData.response?.trim() };
+      }
+    } catch (err) {
+      console.warn('Client-side local Ollama email generate failed, calling backend fallback...', err.message);
+    }
+
+    return fetch(`${API_BASE_URL}/generate-email`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    }).then(handleResponse);
+  },
 
   sendComplaintEmail: (data) => fetch(`${API_BASE_URL}/send-email`, {
     method: 'POST',
