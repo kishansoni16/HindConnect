@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
-import AiAssistantPanel from '../components/AiAssistantPanel';
 import { Landmark, ArrowLeft, Upload, Send, Cpu, X } from 'lucide-react';
 
 export default function CreateTicketPage({ onNavigateSubpage }) {
@@ -18,13 +17,6 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
   const [attachments, setAttachments] = useState([]);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
-  
-  // AI Suggestions
-  const [aiSuggestions, setAiSuggestions] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  
-  // Debounce timeout ref
-  const debounceTimeoutRef = useRef(null);
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -75,64 +67,13 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
     }
   };
 
-  // Trigger AI analysis as user types
-  const triggerAiAnalysis = async (currentTitle, currentDesc) => {
-    if (!currentTitle.trim()) {
-      setAiSuggestions(null);
-      return;
-    }
-    
-    try {
-      setAiLoading(true);
-      const suggestions = await api.analyzeTicket(currentTitle, currentDesc);
-      setAiSuggestions(suggestions);
-      
-      // Auto-populate predicted fields if appropriate, but let the user override
-      if (suggestions.priority) {
-        setUrgency(suggestions.priority);
-      }
-    } catch (err) {
-      console.warn('AI Analysis failed:', err.message);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   const handleTitleChange = (e) => {
-    const val = e.target.value;
-    setTitle(val);
-
-    // Debounce AI analyze request
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    debounceTimeoutRef.current = setTimeout(() => {
-      triggerAiAnalysis(val, description);
-    }, 60000); // 600ms debounce delay
+    setTitle(e.target.value);
   };
 
   const handleDescriptionChange = (e) => {
-    const val = e.target.value;
-    setDescription(val);
-
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    debounceTimeoutRef.current = setTimeout(() => {
-      triggerAiAnalysis(title, val);
-    }, 600);
+    setDescription(e.target.value);
   };
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -149,7 +90,7 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
         description,
         department,
         priority: urgency,
-        category: aiSuggestions?.predictedCategory || 'Software',
+        category: 'Software',
         attachments: attachments
       };
 
@@ -176,15 +117,14 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h2 className="text-xl font-extrabold text-corporate-blue tracking-tight">Raise IT Incident</h2>
+          <h2 className="text-xl font-extrabold text-corporate-blue tracking-tight">Raise Ticket</h2>
           <p className="text-xs text-corporate-textMuted mt-0.5">Submit an issue for review by our engineering standby team.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        
+      <div className="max-w-3xl mx-auto">
         {/* Form Container */}
-        <div className="bg-white border border-corporate-grayBorder rounded-2xl p-6 shadow-sm lg:col-span-7 flex flex-col justify-between">
+        <div className="bg-white border border-corporate-grayBorder rounded-2xl p-6 shadow-sm flex flex-col justify-between">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Title */}
             <div className="space-y-1.5">
@@ -334,12 +274,6 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
             </div>
           </form>
         </div>
-
-        {/* AI Assistant suggestions */}
-        <div className="lg:col-span-5">
-          <AiAssistantPanel loading={aiLoading} suggestions={aiSuggestions} />
-        </div>
-
       </div>
     </div>
   );
