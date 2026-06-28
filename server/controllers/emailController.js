@@ -174,7 +174,7 @@ Write only the email body:`;
 // ── POST /api/send-email ──────────────────────────────────────────────────────
 const sendEmail = async (req, res) => {
   try {
-    const { recipientEmail, recipientName, subject, emailBody, employeeName, employeeEmail, employeeDepartment } = req.body;
+    const { recipientEmail, recipientName, subject, emailBody, employeeName, employeeEmail, employeeDepartment, attachments } = req.body;
 
     if (!recipientEmail || !emailBody) {
       return res.status(400).json({ message: 'Recipient email and email body are required' });
@@ -224,6 +224,11 @@ const sendEmail = async (req, res) => {
       subject: subject || `Complaint Notification from ${employeeDepartment || 'Employee'} Department`,
       text: emailBody,
       html: htmlBody,
+      attachments: (attachments || []).map(att => ({
+        filename: att.filename,
+        content: Buffer.from(att.content, 'base64'),
+        contentType: att.contentType
+      }))
     };
 
     const info = await transporter.sendMail(mailOptions);

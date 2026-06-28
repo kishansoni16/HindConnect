@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import {
   Mail, Zap, Send, Plus, X, Loader2, CheckCircle,
-  AlertCircle, ChevronDown, RefreshCw, Sparkles, Tag
+  AlertCircle, ChevronDown, RefreshCw, Sparkles, Tag, Paperclip
 } from 'lucide-react';
 
 // ── Recipient directory by department ────────────────────────────────────────
@@ -86,6 +86,58 @@ export default function AIEmailPage() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [sendSuccess, setSendSuccess] = useState(null);
+
+  // Attachments state
+  const [attachments, setAttachments] = useState([]);
+
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    let currentTotalSize = attachments.reduce((sum, f) => sum + f.size, 0);
+    const maxSize = 20 * 1024 * 1024; // 20MB
+
+    const newAttachments = [];
+    setSendError('');
+
+    for (const file of files) {
+      if (currentTotalSize + file.size > maxSize) {
+        setSendError('Total attachments size cannot exceed 20MB.');
+        break;
+      }
+      try {
+        const base64Data = await fileToBase64(file);
+        const base64Content = base64Data.split(',')[1];
+        newAttachments.push({
+          filename: file.name,
+          content: base64Content,
+          contentType: file.type,
+          size: file.size
+        });
+        currentTotalSize += file.size;
+      } catch (err) {
+        console.error('Failed to read file:', err);
+      }
+    }
+
+    if (newAttachments.length > 0) {
+      setAttachments(prev => [...prev, ...newAttachments]);
+    }
+    e.target.value = '';
+  };
+
+  const removeAttachment = (indexToRemove) => {
+    setAttachments(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
 
   // ── Load keywords on mount ─────────────────────────────────────────────────
   const loadKeywords = useCallback(async () => {
@@ -177,6 +229,7 @@ export default function AIEmailPage() {
         employeeName: user?.name,
         employeeEmail: user?.email,
         employeeDepartment: user?.department,
+        attachments,
       });
 
       setSendSuccess(res);
@@ -201,6 +254,7 @@ export default function AIEmailPage() {
     setGenerateError('');
     setSendError('');
     setSendSuccess(null);
+    setAttachments([]);
   };
 
   const canProceedStep1 = selectedKeywords.length > 0 || customComplaint.trim().length >= 3;
@@ -461,6 +515,53 @@ export default function AIEmailPage() {
                 rows={14}
                 className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400 font-mono leading-relaxed resize-none"
               />
+            </div>
+
+            {/* Attachments Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
+                  <Paperclip className="w-3.5 h-3.5 text-slate-400" />
+                  Attachments (Optional, Max 20MB total)
+                </label>
+                <label className="cursor-pointer inline-flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:border-corporate-orange hover:text-corporate-orange hover:bg-slate-50 transition-all select-none">
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Files
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </label>
+              </div>
+
+              {attachments.length > 0 && (
+                <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {attachments.map((att, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 shadow-sm">
+                        <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate max-w-[150px]">{att.filename}</span>
+                        <span className="text-[10px] text-slate-400">({(att.size / 1024 / 1024).toFixed(2)} MB)</span>
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(idx)}
+                          className="text-slate-400 hover:text-red-500 transition-all cursor-pointer ml-1"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-[10px] text-slate-400 flex items-center justify-between px-1">
+                    <span>Total: {attachments.length} file(s)</span>
+                    <span>
+                      Total Size: {(attachments.reduce((acc, curr) => acc + curr.size, 0) / 1024 / 1024).toFixed(2)} MB / 20.00 MB
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">
