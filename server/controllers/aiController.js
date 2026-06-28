@@ -179,7 +179,8 @@ Tone: Professional, direct, helpful, and concise. Format your responses with cle
 
     const prompt = `${systemInstructionText}\n\nChat History:\n${formattedHistory}\n\nUser: ${message}\nAssistant:`;
 
-    const response = await fetch('http://localhost:11434/api/generate', {
+    const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434/api/generate';
+    const response = await fetch(ollamaUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
