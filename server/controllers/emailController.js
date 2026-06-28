@@ -128,8 +128,8 @@ Issues/Complaints: ${issueList}
 
 Requirements:
 - Start with "Respected Sir/Ma'am," or "Respected ${recipientName},"
-- Write in a natural, human-like, and professional tone using simple, easy English.
-- Avoid robotic, complex, or overly formal template language.
+- Write in a respectful, highly formal, and professional corporate tone using simple, clear English.
+- Avoid robotic, complex, or overly stiff template language.
 - Keep the email body very short, direct, and strictly to the point.
 - Be specific about the issue.
 - Request prompt action.
