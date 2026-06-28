@@ -408,54 +408,62 @@ class SupabaseModel {
 }
 
 // Connect Function
+let dbConnectPromise = null;
+
 const connectDB = async () => {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_KEY;
+  if (dbConnectPromise) return dbConnectPromise;
 
-  if (supabaseUrl && supabaseKey) {
-    try {
-      console.log('Initializing Supabase client...');
-      supabase = createClient(supabaseUrl, supabaseKey);
-      
-      // Test the connection by doing a simple select on users
-      const { data, error } = await supabase.from('users').select('id').limit(1);
-      if (error) {
-        throw error;
+  dbConnectPromise = (async () => {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_KEY;
+
+    if (supabaseUrl && supabaseKey) {
+      try {
+        console.log('Initializing Supabase client...');
+        supabase = createClient(supabaseUrl, supabaseKey);
+        
+        // Test the connection by doing a simple select on users
+        const { data, error } = await supabase.from('users').select('id').limit(1);
+        if (error) {
+          throw error;
+        }
+        console.log('Supabase connected successfully');
+        useSupabase = true;
+        useMongo = false;
+        return;
+      } catch (error) {
+        console.warn('Supabase connection failed. Falling back to local JSON database.', error.message);
       }
-      console.log('Supabase connected successfully');
-      useSupabase = true;
-      useMongo = false;
-      return;
-    } catch (error) {
-      console.warn('Supabase connection failed. Falling back to local JSON database.', error.message);
     }
-  }
 
-  const mongoUri = process.env.MONGO_URI;
-  if (mongoUri) {
-    try {
-      await mongoose.connect(mongoUri);
-      console.log('MongoDB connected successfully');
-      useMongo = true;
-      useSupabase = false;
+    const mongoUri = process.env.MONGO_URI;
+    if (mongoUri) {
+      try {
+        await mongoose.connect(mongoUri);
+        console.log('MongoDB connected successfully');
+        useMongo = true;
+        useSupabase = false;
 
-      MongoUser = mongoose.model('User', userSchema);
-      MongoTicket = mongoose.model('Ticket', ticketSchema);
-      MongoComment = mongoose.model('Comment', commentSchema);
-      MongoKb = mongoose.model('KnowledgeBase', kbSchema);
-      MongoNotification = mongoose.model('Notification', notificationSchema);
-      MongoActivityLog = mongoose.model('ActivityLog', activityLogSchema);
-      return;
-    } catch (error) {
-      console.warn('MongoDB connection failed. Falling back to local JSON database.', error.message);
+        MongoUser = mongoose.model('User', userSchema);
+        MongoTicket = mongoose.model('Ticket', ticketSchema);
+        MongoComment = mongoose.model('Comment', commentSchema);
+        MongoKb = mongoose.model('KnowledgeBase', kbSchema);
+        MongoNotification = mongoose.model('Notification', notificationSchema);
+        MongoActivityLog = mongoose.model('ActivityLog', activityLogSchema);
+        return;
+      } catch (error) {
+        console.warn('MongoDB connection failed. Falling back to local JSON database.', error.message);
+      }
+    } else {
+      console.log('No database credentials (Supabase/Mongo) specified. Using local JSON database fallback.');
     }
-  } else {
-    console.log('No database credentials (Supabase/Mongo) specified. Using local JSON database fallback.');
-  }
-  
-  useMongo = false;
-  useSupabase = false;
-  initJsonDb();
+    
+    useMongo = false;
+    useSupabase = false;
+    initJsonDb();
+  })();
+
+  return dbConnectPromise;
 };
 
 // Expose unified models

@@ -22,6 +22,16 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Ensure database connection is initialized before handling any routes on Vercel serverless
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('Database connection promise error in middleware:', err);
+  }
+  next();
+});
+
 // Routes Setup
 // 1. Auth routes
 app.post('/api/auth/register', authController.register);
