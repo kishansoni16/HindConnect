@@ -24,7 +24,6 @@ export default function EmployeeDashboard({ onNavigateSubpage }) {
   const [commentText, setCommentText] = useState('');
   const [submitCommentLoading, setSubmitCommentLoading] = useState(false);
   const [activities, setActivities] = useState([]);
-  const [activeTab, setActiveTab] = useState('sent'); // 'sent' or 'received'
 
   const loadDashboardData = async () => {
     try {
@@ -106,11 +105,7 @@ export default function EmployeeDashboard({ onNavigateSubpage }) {
   const resolvedCount = tickets.filter(t => t.status === 'Resolved' || t.status === 'Closed').length;
   const criticalCount = tickets.filter(t => t.priority === 'Critical' && t.status !== 'Closed').length;
 
-  const filteredTickets = tickets.filter(t => {
-    const isSent = t.employeeId === user?.id || t.employeeId === user?._id;
-    const isReceived = t.recipientId === user?.id || t.recipientId === user?._id;
-    return activeTab === 'sent' ? isSent : isReceived;
-  });
+  const filteredTickets = tickets.filter(t => t.employeeId === user?.id || t.employeeId === user?._id);
 
   const getPriorityBadge = (p) => {
     const maps = {
@@ -215,32 +210,11 @@ export default function EmployeeDashboard({ onNavigateSubpage }) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* 2. Ticket Table */}
             <div className="bg-white border border-corporate-grayBorder rounded-2xl shadow-sm overflow-hidden lg:col-span-8">
-              <div className="px-6 py-4 border-b border-corporate-grayBorder flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl">
-                  <button
-                    onClick={() => setActiveTab('sent')}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${
-                      activeTab === 'sent' 
-                        ? 'bg-white text-corporate-blue shadow-sm' 
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    My Sent Tickets
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('received')}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${
-                      activeTab === 'received' 
-                        ? 'bg-white text-corporate-blue shadow-sm' 
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    Received Tickets
-                  </button>
-                </div>
+              <div className="px-6 py-4 border-b border-corporate-grayBorder flex items-center justify-between gap-4">
+                <h3 className="font-bold text-sm text-corporate-blue">My Raised Support Incidents</h3>
                 <button 
                   onClick={loadDashboardData}
-                  className="p-1.5 text-corporate-textMuted hover:text-corporate-blue transition-colors rounded-lg hover:bg-slate-50 self-end sm:self-auto"
+                  className="p-1.5 text-corporate-textMuted hover:text-corporate-blue transition-colors rounded-lg hover:bg-slate-50"
                   title="Reload list"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -252,7 +226,7 @@ export default function EmployeeDashboard({ onNavigateSubpage }) {
                     <tr className="bg-slate-50 border-b border-corporate-grayBorder text-slate-700 font-bold uppercase tracking-wider text-[10px]">
                       <th className="px-6 py-3">Ticket ID</th>
                       <th className="px-6 py-3">Issue Title</th>
-                      <th className="px-6 py-3">{activeTab === 'sent' ? 'Recipient' : 'Sender'}</th>
+                      <th className="px-6 py-3">Recipient</th>
                       <th className="px-6 py-3">Priority</th>
                       <th className="px-6 py-3">Status</th>
                       <th className="px-6 py-3 text-right">Action</th>
@@ -262,9 +236,7 @@ export default function EmployeeDashboard({ onNavigateSubpage }) {
                     {filteredTickets.length === 0 ? (
                       <tr>
                         <td colSpan="6" className="px-6 py-12 text-center text-corporate-textMuted font-semibold">
-                          {activeTab === 'sent' 
-                            ? 'You have not raised any support tickets.' 
-                            : 'No support tickets have been raised to you.'}
+                          You have not raised any support tickets.
                         </td>
                       </tr>
                     ) : (
@@ -281,7 +253,7 @@ export default function EmployeeDashboard({ onNavigateSubpage }) {
                             {t.title}
                           </td>
                           <td className="px-6 py-4 text-slate-500">
-                            {activeTab === 'sent' ? (t.recipientName || 'IT Support Team') : (t.employeeName || 'Anonymous')}
+                            {t.recipientName || 'IT Support Team'}
                           </td>
                           <td className="px-6 py-4">
                             {getPriorityBadge(t.priority)}

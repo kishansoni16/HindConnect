@@ -14,17 +14,17 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
   const [recipientId, setRecipientId] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [recipients, setRecipients] = useState([]);
-  const [useCustomRecipient, setUseCustomRecipient] = useState(false);
-  const [customRecipientEmail, setCustomRecipientEmail] = useState('');
-  const [customRecipientName, setCustomRecipientName] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchRecipients = async () => {
       try {
         const data = await api.getRecipients();
-        // filter out current user
-        const filtered = data.filter(u => u.id !== user?.id && u._id !== user?.id && u.id !== user?._id && u._id !== user?._id);
+        // filter out current user and only include authorities (Admin and IT Staff)
+        const filtered = data.filter(u => 
+          (u.role === 'Admin' || u.role === 'IT Staff') && 
+          u.id !== user?.id && u._id !== user?.id && u.id !== user?._id && u._id !== user?._id
+        );
         setRecipients(filtered);
       } catch (err) {
         console.error('Failed to load recipients:', err);
@@ -112,8 +112,8 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
         priority: urgency,
         category: 'Software',
         attachments: attachments,
-        recipientId: useCustomRecipient ? customRecipientEmail : (recipientId || null),
-        recipientName: useCustomRecipient ? customRecipientName : (recipientName || null)
+        recipientId: recipientId || null,
+        recipientName: recipientName || null
       };
 
       await api.createTicket(payload);
@@ -149,70 +149,28 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
         <div className="bg-white border border-corporate-grayBorder rounded-2xl p-6 shadow-sm flex flex-col justify-between">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Recipient Selection */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label htmlFor="ticket-recipient" className="text-xs font-bold text-slate-700 uppercase tracking-wide block">
-                  Assign/Send Ticket To (Recipient)
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUseCustomRecipient(!useCustomRecipient);
-                    setRecipientId('');
-                    setRecipientName('');
-                    setCustomRecipientEmail('');
-                    setCustomRecipientName('');
-                  }}
-                  className={`inline-flex items-center gap-1.5 text-[10px] font-bold border border-dashed px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                    useCustomRecipient
-                      ? 'border-corporate-orange text-corporate-orange bg-corporate-orange/5'
-                      : 'border-slate-300 text-slate-500 hover:border-corporate-orange hover:text-corporate-orange'
-                  }`}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  {useCustomRecipient ? 'Select registered user instead' : 'Enter custom name/email'}
-                </button>
-              </div>
-
-              {!useCustomRecipient ? (
-                <select
-                  id="ticket-recipient"
-                  value={recipientId}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setRecipientId(val);
-                    const selected = recipients.find(r => r.id === val);
-                    setRecipientName(selected ? selected.name : '');
-                  }}
-                  className="w-full px-4 py-3 border border-corporate-grayBorder focus:border-corporate-blue focus:ring-1 focus:ring-corporate-blue rounded-xl text-xs sm:text-sm text-slate-800 outline-none bg-white font-semibold"
-                >
-                  <option value="">Default (IT Standby Support / Unassigned)</option>
-                  {recipients.map((r) => (
-                    <option key={r.id || r._id} value={r.id || r._id}>
-                      {r.name} ({r.role} - {r.department})
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Recipient Name (e.g. Safety Officer)"
-                    value={customRecipientName}
-                    onChange={(e) => setCustomRecipientName(e.target.value)}
-                    className="w-full px-4 py-3 border border-corporate-grayBorder focus:border-corporate-blue focus:ring-1 focus:ring-corporate-blue rounded-xl text-xs sm:text-sm text-slate-800 outline-none bg-white font-semibold"
-                  />
-                  <input
-                    type="email"
-                    required
-                    placeholder="Recipient Email (e.g. safety@hindalco.com)"
-                    value={customRecipientEmail}
-                    onChange={(e) => setCustomRecipientEmail(e.target.value)}
-                    className="w-full px-4 py-3 border border-corporate-grayBorder focus:border-corporate-blue focus:ring-1 focus:ring-corporate-blue rounded-xl text-xs sm:text-sm text-slate-800 outline-none bg-white font-semibold"
-                  />
-                </div>
-              )}
+            <div className="space-y-1.5">
+              <label htmlFor="ticket-recipient" className="text-xs font-bold text-slate-700 uppercase tracking-wide block">
+                Assign/Send Ticket To (Recipient)
+              </label>
+              <select
+                id="ticket-recipient"
+                value={recipientId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setRecipientId(val);
+                  const selected = recipients.find(r => r.id === val);
+                  setRecipientName(selected ? selected.name : '');
+                }}
+                className="w-full px-4 py-3 border border-corporate-grayBorder focus:border-corporate-blue focus:ring-1 focus:ring-corporate-blue rounded-xl text-xs sm:text-sm text-slate-800 outline-none bg-white font-semibold"
+              >
+                <option value="">Default (IT Standby Support / Unassigned)</option>
+                {recipients.map((r) => (
+                  <option key={r.id || r._id} value={r.id || r._id}>
+                    {r.name} ({r.role} - {r.department})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Title */}
