@@ -20,11 +20,11 @@ export default function CreateTicketPage({ onNavigateSubpage }) {
     const fetchRecipients = async () => {
       try {
         const data = await api.getRecipients();
-        // filter out current user and only include authorities (Admin and IT Staff)
-        const filtered = data.filter(u => 
-          (u.role === 'Admin' || u.role === 'IT Staff') && 
-          u.id !== user?.id && u._id !== user?.id && u.id !== user?._id && u._id !== user?._id
-        );
+        // Include all Admins and IT Staff authorities in the dropdown list
+        const filtered = (Array.isArray(data) ? data : []).filter(u => {
+          const role = String(u.role || '').trim().toLowerCase();
+          return role === 'admin' || role === 'it staff' || role.includes('admin') || role.includes('staff') || role.includes('support');
+        });
         setRecipients(filtered);
       } catch (err) {
         console.error('Failed to load recipients:', err);
