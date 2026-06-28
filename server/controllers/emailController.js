@@ -131,8 +131,7 @@ Requirements:
 - Write in a respectful, highly formal, and professional corporate tone using simple, clear English.
 - Avoid robotic, complex, or overly stiff template language.
 - Keep the email body very short, direct, and strictly to the point.
-- Be specific about the issue.
-- Request prompt action.
+- Request necessary action using a direct, highly formal, and polite corporate statement (e.g., "I request you to kindly arrange for its repair or resolution at your earliest convenience...") instead of asking casual questions.
 - End with "Regards," followed by the employee name and department.
 - Do NOT add any subject line, headers, explanation, or preamble outside the email body.
 - Keep the entire body under 100 words.
