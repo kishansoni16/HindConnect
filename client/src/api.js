@@ -226,18 +226,31 @@ Tone: Professional, direct, helpful, and concise. Format your responses with cle
   }).then(handleResponse),
 
   generateEmail: async (data) => {
-    const { category, details, keywords } = data;
-    const prompt = `Write a professional IT complaint email draft based on the following details:
-Category: ${category}
-Details: ${details}
-Keywords to emphasize: ${(keywords || []).join(', ')}
+    const { complaintKeywords, customComplaint, recipientName, recipientRole, employeeName, employeeDepartment } = data;
+    
+    const issueList = [
+      ...(complaintKeywords || []),
+      ...(customComplaint ? [customComplaint] : []),
+    ].join(', ');
 
-Please structure the email with:
-1. Clear Subject Line
-2. Professional salutation
-3. Problem description incorporating the selected keywords
-4. Expected resolution or SLA reference (Critical, High, Medium, Low)
-5. Professional sign-off placeholder.
+    const prompt = `You are a professional corporate email assistant for Hindalco Industries, an aluminium manufacturing company in India.
+
+Write a formal, polite, and concise complaint/request email based on the following:
+
+Employee Name: ${employeeName || 'An Employee'}
+Employee Department: ${employeeDepartment || 'Operations'}
+Recipient: ${recipientName || 'Department Incharge'}
+Recipient Role: ${recipientRole || 'Department Head'}
+Issues/Complaints: ${issueList}
+
+Requirements:
+- Start with "Dear ${recipientName || 'Sir/Ma\'am'},"
+- Keep it professional and respectful
+- Be specific about the issue
+- Request prompt action
+- End with "Regards," followed by the employee name and department
+- Do NOT add any explanation or preamble outside the email body
+- Keep it under 200 words
 
 Write only the email body:`;
 
